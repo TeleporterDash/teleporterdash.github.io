@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Level 1</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #1a1a1a;
+            font-family: Arial, sans-serif;
+        }
+        #gameContainer {
+            position: relative;
+            width: 1000px;
+            height: 400px;
+            background: #000;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+        #cameraContainer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.1s ease-out;
+        }
+        #heightIndicator {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 5px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            z-index: 1001;
+        }
+        #playerIndicator {
+            position: absolute;
+            right: -2.5px;
+            width: 10px;
+            height: 10px;
+            background: #00ff00;
+            border-radius: 50%;
+            transform: translateY(-50%);
+            transition: top 0.1s ease-out;
+        }
+        #player {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: #22c830;
+            bottom: 50px;
+            left: 100px;
+            z-index: 1000;
+            transform-origin: center;
+        }
+        .platform {
+            position: absolute;
+            background: #4287f5;
+            bottom: 50px;
+        }
+        .spike {
+            position: absolute;
+            bottom: 50px;
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 30px solid #ff0000;
+        }
+        #ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 50px;
+            background: #333;
+        }
+        #score {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 24px;
+        }
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 48px;
+            display: none;
+            text-align: center;
+        }
+        #restartBtn {
+            padding: 10px 20px;
+            font-size: 18px;
+            margin-top: 20px;
+            cursor: pointer;
+            background: #00ff00;
+            border: none;
+            border-radius: 5px;
+        }
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #00ff00;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        
+        .teleporter {
+            position: absolute;
+            width: 30px;
+            height: 60px;
+            background: linear-gradient(to right, #ff00ff, #8c00ff);
+            bottom: 50px;
+            border-radius: 15px;
+            animation: glow 1s infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { box-shadow: 0 0 5px #ff00ff; }
+            to { box-shadow: 0 0 20px #ff00ff; }
+        }
+
+        /* Add level complete styling */
+        #levelComplete {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00ff00;
+            font-size: 48px;
+            display: none;
+            text-align: center;
+            z-index: 100;
+        }
+
+        #progressContainer {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 200px;
+            color: white;
+            font-size: 18px;
+            text-align: left;
+            z-index: 1001;
+        }
+
+        #progressBar {
+            width: 100%;
+            height: 10px;
+            background-color: rgba(51, 51, 51, 0.5);
+            border-radius: 5px;
+            margin-top: 5px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #progressFill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #4287f5);
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+
+        /* Add tooltip styling */
+        [title] {
+            position: relative;
+            cursor: help;
+        }
+
+        [title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 5px;
+            font-size: 14px;
+            white-space: nowrap;
+            z-index: 1001;
+        }
+
+        /* Loading animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Add better touch controls and responsive design */
+        @media (max-width: 768px) {
+            #gameContainer {
+                width: 100%;
+                height: 300px;
+            }
+        }
+
+        #muteButton {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 20px;
+            z-index: 1001;
+        }
+
+        #pauseButton {
+            position: fixed;
+            top: 20px;
+            right: 70px;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 20px;
+            z-index: 1001;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="cameraContainer">
+            <div id="levelComplete">
+                Level Complete!
+                <br>
+                <button id="nextLevelBtn" style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Next Level</button>
+                <button onclick="window.location.href='teleporterdashmenu.html'" style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Back to Menu</button>
+            </div>
+            <div id="player"></div>
+            <div id="ground"></div>
+        </div>
+        <div id="progressContainer">
+            Completion: <span id="progressText">0%</span>
+            <div id="progressBar">
+                <div id="progressFill"></div>
+            </div>
+        </div>
+        <div id="heightIndicator">
+            <div id="playerIndicator"></div>
+        </div>
+        <button id="muteButton">🔊</button>
+        <button id="pauseButton">⏸</button>
+        <div id="gameOver">
+            Game Over!
+            <br>
+            <button id="restartBtn">Try Again</button>
+            <button onclick="window.location.href='teleporterdashmenu.html'" style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin-top: 10px; cursor: pointer;">Back to Menu</button>
+        </div>
+        <div id="settingsMenu" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 20px; border-radius: 10px; color: white; text-align: center; z-index: 1000;">
+            <h2>Level Settings</h2>
+            
+            <!-- Volume Control with tooltip -->
+            <div style="margin: 20px 0;" title="Adjust the game's overall volume">
+                <label>Volume: </label>
+                <input type="range" id="volumeSlider" min="0" max="100" value="90" style="width: 200px;">
+                <span id="volumeValue">90%</span>
+            </div>
+
+            <!-- Practice Mode with tooltip -->
+            <div style="margin: 20px 0;" title="In practice mode, you won't die and can practice the level freely">
+                <label>Practice Mode: </label>
+                <input type="checkbox" id="practiceMode">
+            </div>
+
+            <!-- Custom Controls with tooltip -->
+            <div style="margin: 20px 0;" title="Choose your preferred control method">
+                <label>Control Method: </label>
+                <select id="controlMethod" style="padding: 5px; margin-left: 10px;">
+                    <option value="space">Spacebar</option>
+                    <option value="click">Mouse Click</option>
+                    <option value="both" selected>Both</option>
+                </select>
+            </div>
+
+            <!-- Auto-Restart with tooltip -->
+            <div style="margin: 20px 0;" title="Automatically restart the level when you die">
+                <label>Auto-Restart: </label>
+                <input type="checkbox" id="autoRestart">
+            </div>
+
+            <!-- Speed Control with tooltip -->
+            <div style="margin: 20px 0;" title="Adjust the game speed (Practice Mode only)">
+                <label>Game Speed: </label>
+                <select id="gameSpeed" style="padding: 5px; margin-left: 10px;">
+                    <option value="0.5">0.5x</option>
+                    <option value="1" selected>1x</option>
+                    <option value="2">2x</option>
+                    <option value="3">3x</option>
+                </select>
+            </div>
+
+            <!-- Visual Effects with tooltip -->
+            <div style="margin: 20px 0;" title="Toggle particle effects and visual enhancements">
+                <label>Visual Effects: </label>
+                <input type="checkbox" id="visualEffects" checked>
+            </div>
+
+            <!-- Loading animation -->
+            <div id="loadingAnimation" style="display: none; margin: 20px 0;">
+                <div style="width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #00ff00; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                <p>Preparing Level...</p>
+            </div>
+
+            <button id="startLevelBtn" style="background: #00ff00; color: black; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+                Start Level
+            </button>
+        </div>
+        <div id="pauseMenu" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 20px; border-radius: 10px; color: white; text-align: center; z-index: 1000;">
+            <h2>Game Paused</h2>
+            <button id="resumeBtn" style="background: #00ff00; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Resume</button>
+            <button id="restartFromPauseBtn" style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Restart</button>
+            <button onclick="window.location.href='teleporterdashmenu.html'" style="background: #ff4444; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Exit to Menu</button>
+        </div>
+    </div>
+
+    <script>
+        const levelMatrix = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 1, 1, 1, 1, 1, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 3, 0, 3, 0, 0, 4],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 4],
+            [2, 0, 0, 0, 3, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1, 0, 2, 0, 2, 0, 1, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 1, 1, 1, 1, 1, 1, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4]
+        ];
+
+        // Game variables
+        const player = document.getElementById('player');
+        const gameContainer = document.getElementById('gameContainer');
+        const gameOverElement = document.getElementById('gameOver');
+        const restartBtn = document.getElementById('restartBtn');
+        const levelCompleteElement = document.getElementById('levelComplete');
+        const nextLevelBtn = document.getElementById('nextLevelBtn');
+        const settingsMenu = document.getElementById('settingsMenu');
+        const startLevelBtn = document.getElementById('startLevelBtn');
+
+        // Move magic numbers to constants
+        const CONSTANTS = {
+            GRAVITY: 0.6,
+            JUMP_FORCE: -15,
+            BASE_GAME_SPEED: 8,
+            COLUMN_WIDTH: 40,
+            GROUND_HEIGHT: 50,
+            // etc...
+        };
+
+        let isJumping = false;
+        let gravity = CONSTANTS.GRAVITY;
+        let jumpForce = CONSTANTS.JUMP_FORCE;
+        let playerVelocity = 0;
+        let gameSpeed = CONSTANTS.BASE_GAME_SPEED;
+        let isGameOver = false;
+        let rotation = 0;
+        let obstacles = [];
+        let animationFrameId;
+        let isLevelComplete = false;
+        let currentColumn = 0;
+        let doubleJumpAvailable = true;
+        let particles = [];
+        let isOnPlatform = false;
+
+        const progressText = document.getElementById('progressText');
+        const progressFill = document.getElementById('progressFill');
+        const totalColumns = levelMatrix[0].length;
+
+        let jumpBufferTime = 100; // milliseconds
+        let lastJumpPressTime = 0;
+
+        let lastProgressUpdate = 0;
+        const progressUpdateInterval = 16; // ~60fps update frequency
+        let totalBlocks = 0;
+        let passedBlocks = 0;
+
+        let finishLinePosition = 0;
+
+        let backgroundMusic;
+        let jumpSound;
+        let deathSound;
+        let completionSound;
+        let isMuted = false;
+
+        let isPracticeMode = false;
+        let isLevelStarted = false;
+
+        let autoRestartEnabled = false;
+        let isRestarting = false;
+
+        let isPaused = false;
+        const pauseMenu = document.getElementById('pauseMenu');
+
+        // Consider using a game state object
+        const gameState = {
+            isJumping: false,
+            isPracticeMode: false,
+            isGameOver: false,
+            currentColumn: 0,
+            // etc...
+        };
+
+        // Create settings manager
+        const SettingsManager = {
+            current: {
+                volume: 90,
+                practiceMode: false,
+                controlMethod: 'both'
+            },
+            save() {
+                localStorage.setItem('gameSettings', JSON.stringify(this.current));
+            },
+            load() {
+                // Load saved settings
+            }
+        };
+
+        // Setup audio with the selected music
+        function setupAudio() {
+            try {
+                backgroundMusic = new Audio('LevelSoundtracks/StereoMadness.mp3');
+                backgroundMusic.loop = true;
+                backgroundMusic.volume = 0.9;
+                
+                jumpSound = new Audio('BasicSoundEffects/jumptd.mp3');
+                jumpSound.volume = 0.2;
+                
+                deathSound = new Audio('BasicSoundEffects/deathtd.mp3');
+                deathSound.volume = 0.7;
+                
+                completionSound = new Audio('BasicSoundEffects/lvlcompletetd.mp3');
+                completionSound.volume = 0.7;
+            } catch (error) {
+                console.error("Audio setup failed:", error);
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            backgroundMusic.muted = isMuted;
+            jumpSound.muted = isMuted;
+            deathSound.muted = isMuted;
+            completionSound.muted = isMuted;
+        }
+
+        // Add this after other event listeners
+        document.getElementById('muteButton').addEventListener('click', function() {
+            toggleMute();
+            this.textContent = isMuted ? '🔈' : '🔊';
+        });
+
+        function createParticles() {
+            for (let i = 0; i < 5; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                const rect = player.getBoundingClientRect();
+                particle.style.left = (rect.left + rect.width/2) + 'px';
+                particle.style.bottom = (parseInt(player.style.bottom) || 50) + 'px';
+                gameContainer.appendChild(particle);
+                
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = 5 + Math.random() * 5;
+                particles.push({
+                    element: particle,
+                    vx: Math.cos(angle) * velocity,
+                    vy: Math.sin(angle) * velocity,
+                    life: 1
+                });
+            }
+        }
+
+        function createObstacleFromMatrix(type, row) {
+            if (type === 0) {
+                const emptyBlock = document.createElement('div');
+                emptyBlock.className = 'empty-block';
+                emptyBlock.type = 'empty';
+                emptyBlock.style.position = 'absolute';
+                emptyBlock.style.width = '30px';
+                emptyBlock.style.height = '30px';
+                emptyBlock.style.left = gameContainer.offsetWidth + 'px';
+                
+                // Invert the row calculation to start from bottom
+                const baseHeight = 50;
+                const rowSpacing = 60;
+                const invertedRow = (levelMatrix.length - 1) - row;
+                emptyBlock.style.bottom = (baseHeight + (invertedRow * rowSpacing)) + 'px';
+                
+                document.getElementById('cameraContainer').appendChild(emptyBlock);
+                obstacles.push({ element: emptyBlock, type: 'empty' });
+                return;
+            }
+
+            const obstacle = document.createElement('div');
+            
+            if (type === 4) { // Finish line
+                obstacle.className = 'finishLine';
+                obstacle.style.width = '10px';
+                obstacle.style.height = '350px';
+                obstacle.style.background = '#00ff00';
+                obstacle.type = 'finish';
+                obstacle.style.position = 'absolute';
+                obstacle.style.bottom = '50px'; // Align with ground
+            } else if (type === 2) {
+                obstacle.className = 'spike';
+                obstacle.type = 'spike';
+            } else if (type === 3) {
+                obstacle.className = 'teleporter';
+                obstacle.type = 'teleporter';
+            } else if (type === 1) {
+                obstacle.className = 'platform';
+                obstacle.type = 'platform';
+                obstacle.style.width = '45px';
+                obstacle.style.height = '45px';
+            }
+            
+            obstacle.style.left = gameContainer.offsetWidth + 'px';
+            
+            // Invert the row calculation here too
+            const baseHeight = 50;
+            const rowSpacing = 60;
+            const invertedRow = (levelMatrix.length - 1) - row;
+            obstacle.style.bottom = (baseHeight + (invertedRow * rowSpacing)) + 'px';
+            
+            document.getElementById('cameraContainer').appendChild(obstacle);
+            obstacles.push({ element: obstacle, type: obstacle.type });
+        }
+
+        function levelComplete() {
+            isLevelComplete = true;
+            levelCompleteElement.style.display = 'block';
+            
+            // Play completion sound and fade out music
+            if (!isMuted) {
+                completionSound.currentTime = 0;
+                completionSound.play();
+                fadeOutMusic();
+            }
+            
+            // Update progress bar
+            progressFill.style.width = '100%';
+            progressFill.style.background = 'linear-gradient(90deg, #00ff00, #4287f5)';
+            progressText.textContent = '100% (Level Complete!)';
+            
+            cancelAnimationFrame(animationFrameId);
+        }
+
+        // Add camera-related variables
+        let cameraOffsetY = 0;
+        const CAMERA_FOLLOW_THRESHOLD = 50; // Reduced from 100 to make camera more responsive
+        const MAX_CAMERA_SPEED = 20; // Increased from 15 to make camera movement smoother
+
+        function updateGame() {
+            if (!isLevelStarted || isGameOver || isLevelComplete) return;
+            if (isPaused) {
+                animationFrameId = requestAnimationFrame(updateGame);
+                return;
+            }
+            
+            // Apply game speed to obstacle movement
+            const currentSpeed = isPracticeMode ? gameSpeed : 5;  // Default speed is 5
+            
+            // Create new obstacles less frequently
+            if (currentColumn < levelMatrix[0].length && 
+                (obstacles.length === 0 || 
+                 gameContainer.offsetWidth - obstacles[obstacles.length - 1]?.element.offsetLeft > CONSTANTS.COLUMN_WIDTH)) {
+                for (let row = 0; row < levelMatrix.length; row++) {
+                    createObstacleFromMatrix(levelMatrix[row][currentColumn], row);
+                }
+                currentColumn++;
+                
+                // Only update progress when new obstacles are created
+                updateProgress();
+            }
+
+            // Player physics
+            playerVelocity += gravity;
+            const currentBottom = parseInt(window.getComputedStyle(player).bottom);
+            let newBottom = currentBottom - playerVelocity;
+
+            // Check ground collision with proper constants
+            if (newBottom <= CONSTANTS.GROUND_HEIGHT) {
+                newBottom = CONSTANTS.GROUND_HEIGHT;
+                isJumping = false;
+                doubleJumpAvailable = true;
+                playerVelocity = 0;
+            }
+
+            // Update player position
+            player.style.bottom = `${newBottom}px`;
+            player.style.left = '100px'; // Keep player's horizontal position fixed
+
+            // Rotate player
+            if (isJumping) {
+                rotation += 5;
+                player.style.transform = `rotate(${rotation}deg)`;
+            } else {
+                rotation = 0;
+                player.style.transform = `rotate(${rotation}deg)`;
+            }
+
+            // Update obstacles with optimization
+            const playerRect = player.getBoundingClientRect();
+            const containerLeft = gameContainer.getBoundingClientRect().left;
+            
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obstacle = obstacles[i];
+                let obstacleLeft = parseInt(obstacle.element.style.left);
+                obstacle.element.style.left = (obstacleLeft - currentSpeed) + 'px';
+
+                // Remove off-screen obstacles
+                if (obstacleLeft < -50) {
+                    obstacle.element.remove();
+                    obstacles.splice(i, 1);
+                    continue;
+                }
+
+                // Only check collisions for nearby obstacles
+                if (Math.abs(obstacleLeft - (playerRect.left - containerLeft)) < 100) {
+                    const collision = checkCollision(player, obstacle.element);
+                    if (collision) {
+                        if (obstacle.type === 'finish') {
+                            levelComplete();
+                        } else if (obstacle.type === 'spike') {
+                            gameOver();
+                        } else if (obstacle.type === 'teleporter') {
+                            player.style.bottom = (parseInt(player.style.bottom) + 100) + 'px';
+                            playerVelocity = 0;
+                            createParticles();
+                        } else if (obstacle.type === 'platform') {
+                            handlePlatformCollision(playerRect, obstacle.element);
+                        }
+                    }
+                }
+            }
+
+            // Optimize particle updates
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const particle = particles[i];
+                particle.vy -= 0.2;
+                particle.life -= 0.02;
+                
+                if (particle.life <= 0) {
+                    particle.element.remove();
+                    particles.splice(i, 1);
+                    continue;
+                }
+                
+                particle.element.style.left = (parseFloat(particle.element.style.left) + particle.vx) + 'px';
+                particle.element.style.bottom = (parseFloat(particle.element.style.bottom) + particle.vy) + 'px';
+                particle.element.style.opacity = particle.life;
+            }
+
+            // Use requestAnimationFrame
+            if (!isGameOver && !isLevelComplete) {
+                animationFrameId = requestAnimationFrame(updateGame);
+            }
+
+            // Update camera position
+            const containerHeight = gameContainer.offsetHeight;
+            const targetCameraY = Math.max(0, newBottom - containerHeight / 2);
+            
+            // Smooth camera movement
+            const cameraDistance = targetCameraY - cameraOffsetY;
+            if (Math.abs(cameraDistance) > CAMERA_FOLLOW_THRESHOLD) {
+                const cameraSpeed = Math.min(Math.abs(cameraDistance) * 0.1, MAX_CAMERA_SPEED);
+                cameraOffsetY += Math.sign(cameraDistance) * cameraSpeed;
+            }
+
+            // Apply camera transform (remove negative sign)
+            const cameraContainer = document.getElementById('cameraContainer');
+            cameraContainer.style.transform = `translateY(${cameraOffsetY}px)`;
+
+            // Update height indicator (using the actual player position)
+            const playerIndicator = document.getElementById('playerIndicator');
+            const heightIndicator = document.getElementById('heightIndicator');
+            const maxHeight = levelMatrix.length * 60;
+            const invertedPosition = maxHeight - newBottom;
+            const indicatorPosition = (invertedPosition / maxHeight) * heightIndicator.offsetHeight;
+            playerIndicator.style.top = `${Math.min(heightIndicator.offsetHeight, Math.max(0, indicatorPosition))}px`;
+        }
+
+        // Separate platform collision handling for better organization
+        function handlePlatformCollision(playerRect, platform) {
+            // Get raw positions without camera influence
+            const playerBottom = parseInt(player.style.bottom);
+            const platformBottom = parseInt(platform.style.bottom);
+            const playerLeft = parseInt(player.style.left);
+            const platformLeft = parseInt(platform.style.left);
+            
+            // Calculate overlap using absolute positions
+            const horizontalOverlap = Math.min(playerLeft + 30, platformLeft + 45) - 
+                                    Math.max(playerLeft, platformLeft);
+            const playerWidth = 30;
+            
+            if (playerVelocity > 0 && // Moving downward
+                playerBottom <= platformBottom + 45 && // Platform height is 45
+                playerBottom >= platformBottom &&
+                horizontalOverlap > playerWidth * 0.3) {
+                
+                // Safe landing on platform
+                isOnPlatform = true;
+                isJumping = false;
+                doubleJumpAvailable = true;
+                playerVelocity = 0;
+                
+                // Set player position on top of platform using absolute values
+                player.style.bottom = (platformBottom + 45) + 'px';
+            } else if (!isPracticeMode) {
+                // Side collision check using absolute positions
+                const playerCenterX = playerLeft + (playerWidth / 2);
+                const significantOverlap = horizontalOverlap > playerWidth * 0.4;
+                
+                if (significantOverlap && 
+                    playerCenterX > platformLeft + 5 && 
+                    playerCenterX < platformLeft + 40 &&
+                    playerBottom > platformBottom + 15) {
+                    gameOver();
+                }
+            }
+        }
+
+        function checkCollision(player, obstacle) {
+            if (obstacle.classList.contains('empty-block')) return false;
+            
+            // Get raw positions without camera influence
+            const playerBottom = parseInt(player.style.bottom);
+            const playerLeft = parseInt(player.style.left);
+            const obstacleBottom = parseInt(obstacle.style.bottom);
+            const obstacleLeft = parseInt(obstacle.style.left);
+            
+            const tolerance = 5;
+            const playerSize = 30; // Player width/height
+            const obstacleSize = obstacle.type === 'platform' ? 45 : 30;
+
+            return !(playerLeft + playerSize - tolerance < obstacleLeft || 
+                    playerLeft + tolerance > obstacleLeft + obstacleSize || 
+                    playerBottom + playerSize - tolerance < obstacleBottom || 
+                    playerBottom + tolerance > obstacleBottom + obstacleSize);
+        }
+
+        function gameOver() {
+            if (!isPracticeMode) {  // Only trigger game over if not in practice mode
+                isGameOver = true;
+                
+                if (!isMuted) {
+                    backgroundMusic.pause();
+                    deathSound.currentTime = 0;
+                    deathSound.play();
+                }
+                
+                if (autoRestartEnabled) {
+                    // Add a small delay before restarting
+                    setTimeout(() => {
+                        restartGame();
+                    }, 1000); // 1 second delay
+                } else {
+                    gameOverElement.style.display = 'block';
+                }
+                
+                cancelAnimationFrame(animationFrameId);
+            } else {
+                // In practice mode, just reset position but keep playing
+                player.style.bottom = '50px';
+                playerVelocity = 0;
+                rotation = 0;
+            }
+        }
+
+        function restartGame() {
+            // Cancel any pending animation frames
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            
+            // Reset pause state
+            isPaused = false;
+            pauseMenu.style.display = 'none';
+            
+            // Reset game state
+            isGameOver = false;
+            isLevelComplete = false;
+            currentColumn = 0;
+            gameSpeed = 5;
+            playerVelocity = 0;
+            rotation = 0;
+            isOnPlatform = false;
+            
+            // Reset UI elements
+            levelCompleteElement.style.display = 'none';
+            gameOverElement.style.display = 'none';
+            player.style.bottom = '50px';
+            player.style.transform = 'rotate(0deg)';
+
+            // Clear obstacles and particles
+            obstacles.forEach(obstacle => {
+                if (obstacle.element && obstacle.element.parentNode) {
+                    obstacle.element.remove();
+                }
+            });
+            obstacles = [];
+            
+            particles.forEach(p => {
+                if (p.element && p.element.parentNode) {
+                    p.element.remove();
+                }
+            });
+            particles = [];
+            
+            // Reset jump state
+            doubleJumpAvailable = true;
+            passedBlocks = 0;
+            
+            // Reset progress bar
+            progressFill.style.width = '0%';
+            progressText.textContent = '0%';
+
+            // Reset and replay background music
+            if (!isMuted) {
+                try {
+                    backgroundMusic.pause();
+                    backgroundMusic.currentTime = 0;
+                    backgroundMusic.play().catch(error => console.log("Audio playback failed:", error));
+                } catch (error) {
+                    console.log("Audio reset failed:", error);
+                }
+            }
+            
+            // Reset player position
+            player.style.bottom = `${CONSTANTS.GROUND_HEIGHT}px`;
+            playerVelocity = 0;
+            rotation = 0;
+            player.style.transform = 'rotate(0deg)';
+
+            // Reset camera position
+            cameraOffsetY = 0;
+            document.getElementById('cameraContainer').style.transform = 'translateY(0)';
+            
+            // Start game loop
+            updateGame();
+        }
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                jump();
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('touchstart', jump);
+        restartBtn.addEventListener('click', restartGame);
+        // Add this jump function
+        function jump() {
+            const currentTime = Date.now();
+            
+            if (!isGameOver && (
+                (!isJumping && !isOnPlatform) || 
+                (doubleJumpAvailable && currentTime - lastJumpPressTime > jumpBufferTime)
+            )) {
+                if (isJumping) {
+                    doubleJumpAvailable = false;
+                }
+                isJumping = true;
+                isOnPlatform = false;
+                playerVelocity = jumpForce;
+                createParticles();
+                
+                lastJumpPressTime = currentTime;
+                
+                // Play jump sound
+                if (!isMuted && jumpSound?.readyState === 4) {
+                    jumpSound.currentTime = 0;
+                    jumpSound.play().catch(error => console.log("Jump sound failed:", error));
+                }
+            }
+        }
+
+        // Update the progress in updateGame function where we update obstacles
+        function updateProgress() {
+            // Don't update if game is complete or over
+            if (isGameOver || isLevelComplete) return;
+            
+            const currentTime = Date.now();
+            if (currentTime - lastProgressUpdate < progressUpdateInterval) return;
+            
+            // Ensure currentColumn is valid
+            if (typeof currentColumn !== 'number' || currentColumn < 0) {
+                currentColumn = 0;
+            }
+            
+            // Calculate progress based on distance to finish line
+            passedBlocks = Math.max(0, (currentColumn - 1.1)) * levelMatrix.length;
+            // Adjust calculation to reach 100% at finish line
+            const progress = (passedBlocks / (totalBlocks - levelMatrix.length)) * 100;
+            const clampedProgress = Math.min(Math.round(progress), 100);
+            
+            // Update progress text with distance to finish
+            const blocksToFinish = Math.max(0, totalBlocks - passedBlocks);
+            progressText.textContent = `${clampedProgress}% (${blocksToFinish} blocks to finish)`;
+            
+            // Smooth progress bar update
+            requestAnimationFrame(() => {
+                progressFill.style.width = `${clampedProgress}%`;
+                
+                // Change progress bar color based on completion
+                if (clampedProgress > 75) {
+                    progressFill.style.background = 'linear-gradient(90deg, #00ff00, #4287f5)';
+                } else if (clampedProgress > 50) {
+                    progressFill.style.background = 'linear-gradient(90deg, #ffff00, #00ff00)';
+                } else if (clampedProgress > 25) {
+                    progressFill.style.background = 'linear-gradient(90deg, #ffa500, #ffff00)';
+                }
+            });
+            
+            lastProgressUpdate = currentTime;
+        }
+
+        // Add this function to calculate total blocks
+        function calculateTotalBlocks() {
+            // Find the finish line position (type 4) in the matrix
+            finishLinePosition = 0;
+            for (let col = 0; col < levelMatrix[0].length; col++) {
+                for (let row = 0; row < levelMatrix.length; row++) {
+                    if (levelMatrix[row][col] === 4) {
+                        finishLinePosition = col;
+                        break;
+                    }
+                }
+                if (finishLinePosition > 0) break;
+            }
+            // Total blocks is the number of columns up to the finish line
+            totalBlocks = finishLinePosition * levelMatrix.length;
+            if (totalBlocks === 0) {
+                console.error('No finish line found in level matrix!');
+                totalBlocks = levelMatrix[0].length * levelMatrix.length;
+            }
+        }
+
+        // Add this after other event listeners
+        document.getElementById('muteButton').addEventListener('click', function() {
+            toggleMute();
+            this.textContent = isMuted ? '🔈' : '';
+        });
+
+        // Add music fade out effect
+        function fadeOutMusic() {
+            if (backgroundMusic.volume > 0.02) {
+                backgroundMusic.volume -= 0.02;
+                setTimeout(fadeOutMusic, 100);
+            } else {
+                backgroundMusic.pause();
+                backgroundMusic.volume = 0.6; // Reset volume for next time
+            }
+        }
+
+        // Add this function to handle level start
+        function initializeLevel() {
+            const settingsMenu = document.getElementById('settingsMenu');
+            const volumeSlider = document.getElementById('volumeSlider');
+            const volumeValue = document.getElementById('volumeValue');
+            const practiceModeCheckbox = document.getElementById('practiceMode');
+            const controlMethodSelect = document.getElementById('controlMethod');
+            const autoRestartCheckbox = document.getElementById('autoRestart');
+            const startLevelBtn = document.getElementById('startLevelBtn');
+            const loadingAnimation = document.getElementById('loadingAnimation');
+
+            // Update volume display
+            volumeSlider.addEventListener('input', function() {
+                const volume = this.value;
+                volumeValue.textContent = volume + '%';
+                backgroundMusic.volume = volume / 100;
+                jumpSound.volume = (volume / 100) * 0.2;
+                deathSound.volume = (volume / 100) * 0.7;
+                completionSound.volume = (volume / 100) * 0.7;
+            });
+
+            // Update practice mode
+            practiceModeCheckbox.addEventListener('change', function() {
+                isPracticeMode = this.checked;
+            });
+
+            // Update control method
+            function setupControls(method) {
+                // Remove existing listeners
+                document.removeEventListener('keydown', handleSpaceJump);
+                document.removeEventListener('mousedown', jump);
+                
+                // Add new listeners based on selection
+                if (method === 'space' || method === 'both') {
+                    document.addEventListener('keydown', handleSpaceJump);
+                }
+                if (method === 'click' || method === 'both') {
+                    document.addEventListener('mousedown', jump);
+                }
+            }
+
+            function handleSpaceJump(e) {
+                if (e.code === 'Space') {
+                    jump();
+                    e.preventDefault();
+                }
+            }
+
+            // Set up initial controls (both)
+            setupControls('both');
+
+            // Handle control method changes
+            controlMethodSelect.addEventListener('change', function() {
+                setupControls(this.value);
+            });
+
+            // Fix auto-restart
+            autoRestartCheckbox.addEventListener('change', function() {
+                autoRestartEnabled = this.checked;
+                // Save preference to localStorage (optional)
+                localStorage.setItem('autoRestartEnabled', this.checked);
+            });
+
+            // Load saved preference (optional)
+            const savedAutoRestart = localStorage.getItem('autoRestartEnabled');
+            if (savedAutoRestart !== null) {
+                autoRestartEnabled = savedAutoRestart === 'true';
+                autoRestartCheckbox.checked = autoRestartEnabled;
+            }
+
+            // Add the start level button click handler
+            startLevelBtn.addEventListener('click', function() {
+                const loadingAnimation = document.getElementById('loadingAnimation');
+                
+                // Show loading animation
+                loadingAnimation.style.display = 'block';
+                startLevelBtn.style.display = 'none';
+
+                // Try to play audio
+                backgroundMusic.play().catch(error => {
+                    console.log("Audio autoplay prevented:", error);
+                });
+
+                // Hide settings menu and start game
+                setTimeout(() => {
+                    settingsMenu.style.display = 'none';
+                    isLevelStarted = true;
+                    updateGame();
+                }, 500);
+            });
+
+            // Game Speed Control
+            const gameSpeedSelect = document.getElementById('gameSpeed');
+            gameSpeedSelect.addEventListener('change', function() {
+                if (isPracticeMode) {
+                    gameSpeed = parseFloat(this.value) * 8; // Adjust base speed
+                }
+            });
+
+            // Visual Effects Toggle
+            const visualEffectsCheckbox = document.getElementById('visualEffects');
+            visualEffectsCheckbox.addEventListener('change', function() {
+                if (!this.checked) {
+                    // Disable particle creation
+                    window.createParticles = function() { return; };
+                } else {
+                    // Re-enable particle creation
+                    window.createParticles = function() {
+                        for (let i = 0; i < 5; i++) {
+                            const particle = document.createElement('div');
+                            particle.className = 'particle';
+                            const rect = player.getBoundingClientRect();
+                            particle.style.left = (rect.left + rect.width/2) + 'px';
+                            particle.style.bottom = (parseInt(player.style.bottom) || 50) + 'px';
+                            gameContainer.appendChild(particle);
+                            
+                            const angle = Math.random() * Math.PI * 2;
+                            const velocity = 5 + Math.random() * 5;
+                            particles.push({
+                                element: particle,
+                                vx: Math.cos(angle) * velocity,
+                                vy: Math.sin(angle) * velocity,
+                                life: 1
+                            });
+                        }
+                    };
+                }
+            });
+
+            // Disable speed control if not in practice mode
+            practiceModeCheckbox.addEventListener('change', function() {
+                gameSpeedSelect.disabled = !this.checked;
+                if (!this.checked) {
+                    gameSpeedSelect.value = "1";
+                    gameSpeed = 8; // Reset to default speed
+                }
+            });
+
+            // Cleanup function for event listeners
+            const cleanup = () => {
+                document.removeEventListener('keydown', handleSpaceJump);
+                document.removeEventListener('mousedown', jump);
+                document.removeEventListener('touchstart', jump);
+            };
+            
+            // Store cleanup function for potential future use
+            window.cleanupLevelEvents = cleanup;
+        }
+
+        // Helper function for jump handling
+        function handleJump(e) {
+            if (e.type === 'keydown' && e.code !== 'Space') return;
+            jump();
+        }
+
+        
+
+        // Use requestAnimationFrame more efficiently
+        let lastTime = 0;
+        function gameLoop(timestamp) {
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+            updateGame(deltaTime);
+        }
+
+        // Add proper asset preloading
+        async function preloadAssets() {
+            await Promise.all([
+                loadAudio(),
+                loadImages(),
+                loadLevelData()
+            ]);
+        }
+
+        function togglePause() {
+            if (isGameOver || isLevelComplete) return;
+            
+            isPaused = !isPaused;
+            const pauseButton = document.getElementById('pauseButton');
+            
+            if (isPaused) {
+                pauseMenu.style.display = 'block';
+                pauseButton.textContent = '▶';  // Play icon
+                if (!isMuted && backgroundMusic) {
+                    backgroundMusic.pause();
+                }
+            } else {
+                pauseMenu.style.display = 'none';
+                pauseButton.textContent = '⏸';  // Pause icon
+                if (!isMuted && backgroundMusic) {
+                    backgroundMusic.play().catch(error => console.log("Audio resume failed:", error));
+                }
+            }
+        }
+
+        // Add pause key listener
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyP') {
+                togglePause();
+            }
+        });
+
+        // Add resume button listener
+        document.getElementById('resumeBtn').addEventListener('click', togglePause);
+
+        // Add restart from pause button listener
+        document.getElementById('restartFromPauseBtn').addEventListener('click', () => {
+            pauseMenu.style.display = 'none';
+            isPaused = false;
+            restartGame();
+        });
+
+        // Add this with your other event listeners
+        document.getElementById('pauseButton').addEventListener('click', togglePause);
+
+        // Initialize the game
+        window.onload = function() {
+            
+            // Create camera container if it doesn't exist
+            if (!document.getElementById('cameraContainer')) {
+                const cameraContainer = document.createElement('div');
+                cameraContainer.id = 'cameraContainer';
+                
+                // Move existing elements into camera container
+                const elementsToMove = ['player', 'ground', 'progressContainer'];
+                elementsToMove.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        cameraContainer.appendChild(element);
+                    }
+                });
+                
+                gameContainer.insertBefore(cameraContainer, gameContainer.firstChild);
+            }
+
+            // Create height indicator if it doesn't exist
+            if (!document.getElementById('heightIndicator')) {
+                const heightIndicator = document.createElement('div');
+                heightIndicator.id = 'heightIndicator';
+                const playerIndicator = document.createElement('div');
+                playerIndicator.id = 'playerIndicator';
+                heightIndicator.appendChild(playerIndicator);
+                gameContainer.appendChild(heightIndicator);
+            }
+
+            setupAudio();
+            calculateTotalBlocks();
+            initializeLevel();
+        };
+
+        // Add this with your other event listeners
+        document.getElementById('nextLevelBtn').addEventListener('click', function() {
+            window.location.href = 'level2.html';  // Navigate to level 2
+        });
+    </script>
+</body>
+</html>
