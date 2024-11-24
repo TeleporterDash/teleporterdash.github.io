@@ -289,20 +289,20 @@
             
             <!-- Volume Control with tooltip -->
             <div style="margin: 20px 0;" title="Adjust the game's overall volume">
-                <label>Volume: </label>
+                <label for="volumeSlider">Volume: </label>
                 <input type="range" id="volumeSlider" min="0" max="100" value="90" style="width: 200px;">
                 <span id="volumeValue">90%</span>
             </div>
 
             <!-- Practice Mode with tooltip -->
             <div style="margin: 20px 0;" title="In practice mode, you won't die and can practice the level freely">
-                <label>Practice Mode: </label>
+                <label for="practiceMode">Practice Mode: </label>
                 <input type="checkbox" id="practiceMode">
             </div>
 
             <!-- Custom Controls with tooltip -->
             <div style="margin: 20px 0;" title="Choose your preferred control method">
-                <label>Control Method: </label>
+                <label for="controlMethod">Control Method: </label>
                 <select id="controlMethod" style="padding: 5px; margin-left: 10px;">
                     <option value="space">Spacebar</option>
                     <option value="click">Mouse Click</option>
@@ -312,13 +312,13 @@
 
             <!-- Auto-Restart with tooltip -->
             <div style="margin: 20px 0;" title="Automatically restart the level when you die">
-                <label>Auto-Restart: </label>
+                <label for="autoRestart">Auto-Restart: </label>
                 <input type="checkbox" id="autoRestart">
             </div>
 
             <!-- Speed Control with tooltip -->
             <div style="margin: 20px 0;" title="Adjust the game speed (Practice Mode only)">
-                <label>Game Speed: </label>
+                <label for="gameSpeed">Game Speed: </label>
                 <select id="gameSpeed" style="padding: 5px; margin-left: 10px;">
                     <option value="0.5">0.5x</option>
                     <option value="1" selected>1x</option>
@@ -329,7 +329,7 @@
 
             <!-- Visual Effects with tooltip -->
             <div style="margin: 20px 0;" title="Toggle particle effects and visual enhancements">
-                <label>Visual Effects: </label>
+                <label for="visualEffects">Visual Effects: </label>
                 <input type="checkbox" id="visualEffects" checked>
             </div>
 
@@ -424,7 +424,7 @@
         let isGameOver = false;             // Whether the game is in a "game over" state
         let rotation = 0;                   // Current rotation of the player sprite
         let obstacles = [];                 // Array of all active obstacles
-        let animationFrameId;              // ID of the current animation frame
+        let animationFrameId = null;              // ID of the current animation frame
         let isLevelComplete = false;       // Whether the level has been completed
         let currentColumn = 0;             // Current column position in the level
         let doubleJumpAvailable = true;    // Whether double jump is available
@@ -709,14 +709,22 @@
          * Called every animation frame when game is running
          */
         function updateGame() {
+            // Cancel any existing animation frame before starting new one
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+
             // Don't update if game isn't in active state
-            if (!isLevelStarted || isGameOver || isLevelComplete) return;
+            if (!isLevelStarted || isGameOver || isLevelComplete) {
+                return;
+            }
+            
             if (isPaused) {
                 animationFrameId = requestAnimationFrame(updateGame);
                 return;
             }
             
-            // Add background color update
+            // Update background color as part of the game loop
             updateBackgroundColor();
             
             // Apply game speed to obstacle movement
@@ -1246,24 +1254,54 @@
              * Handles level start sequence
              * Shows loading animation and initializes game
              */
-            startLevelBtn.addEventListener('click', function() {
+            startLevelBtn.addEventListener('click', async function() {
                 const loadingAnimation = document.getElementById('loadingAnimation');
+                const settingsMenu = document.getElementById('settingsMenu');
                 
-                // Visual feedback for loading
-                loadingAnimation.style.display = 'block';
-                startLevelBtn.style.display = 'none';
+                try {
+                    // Visual feedback for loading
+                    loadingAnimation.style.display = 'block';
+                    startLevelBtn.style.display = 'none';
 
-                // Attempt to start background music
-                backgroundMusic.play().catch(error => {
-                    console.log("Audio autoplay prevented:", error);
-                });
+                    // Initialize level data
+                    await initializeLevelData();
+                    
+                    // Reset game state
+                    isGameOver = false;
+                    isLevelComplete = false;
+                    isPaused = false;
+                    currentColumn = 0;
+                    playerVelocity = 0;
+                    rotation = 0;
+                    
+                    // Clear any existing animation frame
+                    if (animationFrameId) {
+                        cancelAnimationFrame(animationFrameId);
+                        animationFrameId = null;
+                    }
 
-                // Delayed start to allow loading animation
-                setTimeout(() => {
+                    // Hide settings menu and start game
                     settingsMenu.style.display = 'none';
                     isLevelStarted = true;
-                    updateGame();
-                }, 500);
+                    
+                    // Start background music if not muted
+                    if (!isMuted && backgroundMusic) {
+                        try {
+                            await backgroundMusic.play();
+                        } catch (error) {
+                            console.log("Audio autoplay prevented:", error);
+                        }
+                    }
+
+                    // Start the game loop
+                    requestAnimationFrame(updateGame);
+                    
+                } catch (error) {
+                    console.error("Failed to start level:", error);
+                    loadingAnimation.style.display = 'none';
+                    startLevelBtn.style.display = 'block';
+                    alert('Failed to start level. Please try again.');
+                }
             });
 
             // Game speed control for practice mode
@@ -1408,198 +1446,67 @@
         // Toggle pause with pause button
         document.getElementById('pauseButton').addEventListener('click', togglePause);
 
-        /**
-         * Initializes game elements and starts the game
-         * Called when window loads
-         */
-        window.onload = async function() {
-            try {
-                // Create UI elements first
-                if (!document.getElementById('cameraContainer')) {
-                    const cameraContainer = document.createElement('div');
-                    cameraContainer.id = 'cameraContainer';
-                    
-                    const elementsToMove = ['player', 'ground', 'progressContainer'];
-                    elementsToMove.forEach(id => {
-                        const element = document.getElementById(id);
-                        if (element) {
-                            cameraContainer.appendChild(element);
-                        }
-                    });
-                    
-                    gameContainer.insertBefore(cameraContainer, gameContainer.firstChild);
-                }
-
-                if (!document.getElementById('heightIndicator')) {
-                    const heightIndicator = document.createElement('div');
-                    heightIndicator.id = 'heightIndicator';
-                    const playerIndicator = document.createElement('div');
-                    playerIndicator.id = 'playerIndicator';
-                    heightIndicator.appendChild(playerIndicator);
-                    gameContainer.appendChild(heightIndicator);
-                }
-
-                // Load level data with retry mechanism
-                let retryCount = 0;
-                const maxRetries = 3;
-                
-                while (retryCount < maxRetries) {
-                    try {
-                        await initializeLevelData();
-                        break; // Exit loop if successful
-                    } catch (error) {
-                        retryCount++;
-                        if (retryCount === maxRetries) {
-                            throw new Error('Failed to load level data after multiple attempts');
-                        }
-                        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
-                    }
-                }
-
-                // Verify level data before proceeding
-                if (!levelMatrix || !Array.isArray(levelMatrix) || levelMatrix.length === 0) {
-                    throw new Error('Invalid level data structure');
-                }
-
-                // Initialize game systems
-                setupAudio();
-                calculateTotalBlocks();
-                validateLevelData(levelMatrix);
-                initializeLevel();
-                initializeTouchControls();
-
-            } catch (error) {
-                console.error('Game initialization failed:', error);
-                
-                // Show error message to user
-                const errorMessage = document.createElement('div');
-                errorMessage.style.cssText = `
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    background: rgba(0, 0, 0, 0.9);
-                    color: white;
-                    padding: 20px;
-                    border-radius: 10px;
-                    text-align: center;
-                    z-index: 1000;
-                `;
-                errorMessage.innerHTML = `
-                    <h2>Failed to Load Level</h2>
-                    <p>Please try again or return to menu.</p>
-                    <button onclick="window.location.href='../index.html'" 
-                            style="background: #4285F4; color: white; padding: 10px 20px; 
-                                   border: none; border-radius: 5px; margin-top: 10px; 
-                                   cursor: pointer;">
-                        Return to Menu
-                    </button>
-                    <button onclick="window.location.reload()" 
-                            style="background: #00ff00; color: white; padding: 10px 20px; 
-                                   border: none; border-radius: 5px; margin-top: 10px; 
-                                   margin-left: 10px; cursor: pointer;">
-                        Try Again
-                    </button>
-                `;
-                document.body.appendChild(errorMessage);
-                
-                // Don't immediately redirect
-                // window.location.href = '../index.html';
+        // Define a function to smoothly transition between two colors
+        function interpolateColor(color1, color2, factor) {
+            if (!color1 || !color2) {
+                return COLOR_MAP['-1']; // Default to black if colors are invalid
             }
+            
+            try {
+                const c1 = color1.match(/\d+/g)?.map(Number) || [0, 0, 0];
+                const c2 = color2.match(/\d+/g)?.map(Number) || [0, 0, 0];
+                
+                const result = c1.map((c, i) => Math.round(c + (c2[i] - c) * factor));
+                return `rgb(${result.join(",")})`;
+            } catch (error) {
+                console.warn('Color interpolation failed:', error);
+                return COLOR_MAP['-1']; // Default to black
+            }
+        }
+
+        // Color mapping from level editor
+        const COLOR_MAP = {
+            '-1': '#000000',  // Black
+            '-2': '#913291',  // Dark purple
+            '-3': '#339033',  // Dark green
+            '-4': '#963535',  // Dark red
+            '-5': '#2a2a8d'   // Dark blue
         };
 
-        // Navigate to next level when button clicked
-        document.getElementById('nextLevelBtn').addEventListener('click', function() {
-            const nextLevelNumber = parseInt(levelId) + 1;
-            window.location.href = `gameloader.html?level=${nextLevelNumber}`;
-        });
+        // Smooth background transition logic using the color codes
+        const colorSteps = [
+            COLOR_MAP['-1'],
+            COLOR_MAP['-2'],
+            COLOR_MAP['-3'],
+            COLOR_MAP['-4'],
+            COLOR_MAP['-5']
+        ];
+        let colorIndex = 0;
+        let transitionFactor = 0;
+        const transitionSpeed = 0.005; // Slower transition for smoother effect
 
-        /**
-         * Sets up touch controls for mobile devices
-         * Prevents default scroll behavior
-         */
-        function initializeTouchControls() {
-            document.addEventListener('touchstart', function(e) {
-                e.preventDefault(); // Prevent scrolling
-                if (!isPaused && !isGameOver && !isLevelComplete) {
-                    jump();
-                }
-            }, { passive: false });
-        }
-
-        /**
-         * Removes all particle effects from the game
-         * Called during cleanup and level restart
-         */
-        function cleanupParticles() {
-            particles.forEach(p => {
-                if (p.element && p.element.parentNode) {
-                    p.element.remove();
-                }
-            });
-            particles = [];
-        }
-
-        /**
-         * Validates level data structure and content
-         * @param {Array<Array<number>>} matrix - The level layout matrix
-         * @throws {Error} If matrix format is invalid or finish line is missing
-         */
-        function validateLevelData(matrix) {
-            if (!matrix || !Array.isArray(matrix) || !matrix.length || !Array.isArray(matrix[0])) {
-                throw new Error('Invalid level matrix format');
-            }
-            
-            let hasFinishLine = false;
-            for (let row of matrix) {
-                for (let cell of row) {
-                    if (cell === 4) hasFinishLine = true;
-                    if (typeof cell !== 'number' || cell < 0 || cell > 4) {
-                        throw new Error('Invalid cell value in matrix');
-                    }
-                }
-            }
-            
-            if (!hasFinishLine) {
-                throw new Error('Level must have a finish line (type 4)');
-            }
-        }
-
-        /**
-         * Updates background color based on current position in level
-         * Uses negative numbers in top row of matrix for color codes
-         */
         function updateBackgroundColor() {
-            let visualColumn = 0;
-            if (obstacles.length > 0) {
-                const firstObstacle = obstacles[0];
-                const obstacleLeft = parseInt(firstObstacle.element.style.left);
-                visualColumn = Math.floor((gameContainer.offsetWidth - obstacleLeft) / CONSTANTS.COLUMN_WIDTH);
-            }
-
-            if (visualColumn >= 0 && visualColumn < levelMatrix[0].length) {
-                const colors = {
-                    '-1': '#000000',    // Default black
-                    '-2': '#913291',    // Dark purple
-                    '-3': '#339033',    // Dark green
-                    '-4': '#963535',    // Dark red
-                    '-5': '#2a2a8d'     // Dark blue
-                };
+            if (colorIndex < colorSteps.length - 1) {
+                transitionFactor += transitionSpeed;
                 
-                const colorCode = levelMatrix[0][visualColumn];
-                const nextColumn = Math.min(visualColumn + 1, levelMatrix[0].length - 1);
-                const nextColorCode = levelMatrix[0][nextColumn];
+                if (transitionFactor >= 1) {
+                    transitionFactor = 0;
+                    colorIndex = (colorIndex + 1) % (colorSteps.length - 1);
+                }
                 
-                const currentColor = colorCode in colors ? colors[colorCode] : colors['-1'];
-                const nextColor = nextColorCode in colors ? colors[nextColorCode] : colors['-1'];
+                const currentColor = colorSteps[colorIndex];
+                const nextColor = colorSteps[colorIndex + 1];
+                const newColor = interpolateColor(currentColor, nextColor, transitionFactor);
                 
                 const gameContainer = document.getElementById('gameContainer');
-                gameContainer.style.setProperty('--from-color', currentColor);
-                gameContainer.style.setProperty('--to-color', nextColor);
-                gameContainer.style.animation = 'backgroundTransition 1s forwards';
+                if (gameContainer) {
+                    gameContainer.style.setProperty("--from-color", newColor);
+                    gameContainer.style.setProperty("--to-color", nextColor);
+                }
             }
         }
 
+ 
         /**
          * Enhanced level data validation
          * @throws {Error} If validation fails
@@ -1673,6 +1580,13 @@
                 }
             }, { passive: false });
         }
+
+        // Add cleanup function for when leaving the page
+        window.addEventListener('beforeunload', () => {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+        });
 
     </script>
 </body>
