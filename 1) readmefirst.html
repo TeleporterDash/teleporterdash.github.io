@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title>Teleporter Dash - Read Me First</title>
+  <style type="text/css">
+    body {
+      font-family: 'Helvetica Neue', sans-serif;
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      line-height: 1.6;
+      background: #1a1a1a;
+      color: white;
+    }
+    h1 {
+      color: #0F9D58;
+      text-align: center;
+    }
+    .section {
+      margin: 20px 0;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+    }
+    ul {
+      list-style-type: none;
+      padding-left: 20px;
+    }
+    li {
+      margin: 10px 0;
+    }
+    .important {
+      color: #4285F4;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Teleporter Dash</h1>
+  
+  <div class="section">
+    <p class="important">Run TDMenu.html to start the game!</p>
+  </div>
+
+  <div class="section">
+    <h2>Project Structure:</h2>
+    <ul>
+      <li><strong>/Sound</strong>
+        <ul>
+          <li><strong>/Basic Soundeffects</strong> - Contains game sound effects and menu music</li>
+          <li><strong>/Level Soundtracks</strong> - Contains music for all levels</li>
+        </ul>
+      </li>
+      
+      <li><strong>/Levels</strong>
+        <ul>
+          <li><strong>gameloader.html</strong> - Main game engine file</li>
+          <li><strong>level1.js, level2.js, etc.</strong> - Individual level data files</li>
+        </ul>
+      </li>
+      
+      <li><strong>/Level Editor</strong>
+        <ul>
+          <li><strong>leveleditor.html</strong> - Level creation tool</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Main Files:</h2>
+    <ul>
+      <li><strong>TDMenu.html</strong> - Main menu and game launcher</li>
+      <li><strong>readmefirst.html</strong> - This documentation file</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Notes:</h2>
+    <ul>
+      <li>Custom levels created in the level editor will be exported as zip files</li>
+      <li>To add custom music, place audio files in the /Sound/Level Soundtracks folder</li>
+      <li>The game automatically detects and loads all level files in the /Levels directory</li>
+    </ul>
+  </div>
+</body>
+</html>
