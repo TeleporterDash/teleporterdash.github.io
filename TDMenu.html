@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teleporter Dash</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #1a1a2e;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        .menu, .options-menu, .level-selector {
+            text-align: center;
+            background-color: #16213e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 20px #0F9D58;
+            width: 300px;
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
+            visibility: visible;
+        }
+
+        .fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .fade-in {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        h1, h2 {
+            color: #0F9D58;
+            text-shadow: 0 0 10px #0F9D58;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            margin: 15px auto;
+            padding: 12px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            background: linear-gradient(45deg, #0F9D58, #4285F4);
+            border: 2px solid #0F9D58;
+            border-radius: 10px;
+            color: #16213e;
+            font-weight: bold;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: linear-gradient(45deg, #4285F4, #0F9D58);
+            transform: scale(1.05);
+        }
+
+        button:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        select {
+            padding: 10px;
+            font-size: 1.2rem;
+            width: 100%;
+            background-color: #0F9D58;
+            color: #16213e;
+            border: 2px solid #0F9D58;
+            border-radius: 10px;
+        }
+
+        .level-selector {
+            text-align: center;
+
+            width: 80%;
+            max-width: 800px;
+            position: relative;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 70vh;
+        }
+
+        .level-navigation {
+            background-color: #182138;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            position: relative;
+            box-shadow: 0 0 20px #0F9D58;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .level-info {
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 10px;
+        }
+
+        .nav-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            margin-top: 20px;
+            height: 160px;
+        }
+
+        .nav-section {
+            position: relative;
+            height: 140px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .nav-button {
+            width: 100%;
+            height: 90%;
+            background: linear-gradient(45deg, #0F9D58, #4285F4);
+            border: none;
+            color: #182c22;
+            font-size: 40px;
+            cursor: pointer;
+            filter: drop-shadow(0 0 10px #0F9D58);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            margin: 0;
+            opacity: 0.8;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .nav-button:hover {
+            opacity: 1;
+        }
+
+        .nav-button.prev::after {
+            content: '◀';
+        }
+
+        .nav-button.next::after {
+            content: '▶';
+        }
+
+        .nav-button:hover {
+            transform: scale(1.07);
+        }
+
+        .level-name {
+            font-size: 2em;
+            color: #0F9D58;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(15, 157, 88, 0.3);
+        }
+
+        .difficulty {
+            font-size: 1.2em;
+            color: #4285F4;
+            margin: 10px 0;
+        }
+
+        .completion {
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            margin: 20px auto;
+            width: 80%;
+            overflow: hidden;
+        }
+
+        .completion-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0F9D58, #4285F4);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .back-button {
+            align-self: flex-start;
+            margin-top: auto;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            background: linear-gradient(45deg, #0F9D58, #4285F4);
+            border: none;
+            border-radius: 10px;
+            color: #16213e;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 0 10px rgba(15, 157, 88, 0.3);
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(15, 157, 88, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <!-- Background music -->
+    <audio id="menu-music" loop preload="auto">
+        <source src="Sound/Basic Soundeffects/menutd.mp3" type="audio/mp3">
+    </audio>
+
+    <!-- Main Menu -->
+    <div class="menu">
+        <h1>Teleporter Dash</h1>
+        <button onclick="startGame()">Start Game</button>
+        <button onclick="openLevelEditor()">Level Editor</button>
+        <button onclick="openOptionsMenu()">Options</button>
+        <button onclick="showCredits()">Credits</button>
+    </div>
+
+    <!-- Level Selector -->
+    <div class="level-selector" style="display: none;">
+        <h2>Select Level</h2>
+        <div class="level-grid">
+            <!-- Levels will be populated here by JavaScript -->
+        </div>
+        <button class="back-button" onclick="backToMenu()">Back to Menu</button>
+    </div>
+
+    <!-- Options Menu -->
+    <div class="options-menu" style="display: none;">
+        <h2>Volume Control</h2>
+        <input type="range" id="volume-slider" min="0" max="100" value="50" oninput="updateVolumeLabel()">
+        <p>Volume: <span id="volume-label">50</span>%</p>
+        <button onclick="closeOptionsMenu()">Back</button>
+    </div>
+
+    <script> 
+        document.getElementById('menu-music').loop = true;
+        document.getElementById('menu-music').volume = 0.9;
+        document.getElementById('menu-music').preload = 'auto';
+        
+        window.addEventListener('click', function() {
+            document.getElementById('menu-music').play();
+        }, { once: true });
+
+        function startGame() {
+            const menu = document.querySelector(".menu");
+            const levelSelector = document.querySelector(".level-selector");
+            
+            menu.classList.add('fade-out');
+            setTimeout(() => {
+                menu.style.display = "none";
+                levelSelector.style.display = "block";
+                // Small delay before fade in
+                setTimeout(() => {
+                    levelSelector.classList.remove('fade-out');
+                }, 50);
+            }, 500);
+        }
+
+        function beginLevel() {
+            const level = document.getElementById("level-select").value;
+            const levelNumber = level.replace("level", "");
+            window.location.href = `Levels/gameloader.html?level=${levelNumber}`;
+        }
+
+        function backToMenu() {
+            const menu = document.querySelector(".menu");
+            const levelSelector = document.querySelector(".level-selector");
+            
+            levelSelector.classList.add('fade-out');
+            setTimeout(() => {
+                levelSelector.style.display = "none";
+                menu.style.display = "block";
+                // Small delay before fade in
+                setTimeout(() => {
+                    menu.classList.remove('fade-out');
+                }, 50);
+            }, 500);
+        }
+
+        function openOptionsMenu() {
+            const menu = document.querySelector(".menu");
+            const optionsMenu = document.querySelector(".options-menu");
+            
+            menu.classList.add('fade-out');
+            setTimeout(() => {
+                menu.style.display = "none";
+                optionsMenu.style.display = "block";
+                // Small delay before fade in
+                setTimeout(() => {
+                    optionsMenu.classList.remove('fade-out');
+                }, 50);
+            }, 500);
+        }
+
+        function closeOptionsMenu() {
+            const menu = document.querySelector(".menu");
+            const optionsMenu = document.querySelector(".options-menu");
+            
+            optionsMenu.classList.add('fade-out');
+            setTimeout(() => {
+                optionsMenu.style.display = "none";
+                menu.style.display = "block";
+                // Small delay before fade in
+                setTimeout(() => {
+                    menu.classList.remove('fade-out');
+                }, 50);
+            }, 500);
+        }
+
+        function showCredits() {
+            alert("Credits to RobTopGames for the original game and music! \nCredits to ForeverBound, DJVI, and Step for the amazing original Geometry Dash music!");
+        }
+
+        function updateVolumeLabel() {
+            const volume = document.getElementById("volume-slider").value;
+            document.getElementById("volume-label").innerText = volume;
+            document.getElementById("menu-music").volume = volume / 100;
+        }
+
+        function openLevelEditor() {
+            window.location.href = "Level Editor/leveleditor.html";
+        }
+        
+        let currentLevelIndex = 0;
+        let levels = [];
+
+        function createLevelCard(level, isLocked = false) {
+            const card = document.createElement('div');
+            card.className = 'level-info';
+            
+            const completion = localStorage.getItem(`level${level.id}_completion`) || 0;
+            
+            if (isLocked) {
+                card.innerHTML = `
+                    <div class="level-name">Level ${level.id}</div>
+                    <div class="difficulty">Complete previous level to unlock</div>
+                `;
+            } else {
+                card.innerHTML = `
+                    <div class="level-name">${level.title}</div>
+                    <div class="difficulty">Difficulty: ${level.difficulty}</div>
+                    <div class="completion">
+                        <div class="completion-fill" style="width: ${completion}%"></div>
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    window.location.href = `Levels/gameloader.html?level=${level.id}`;
+                });
+            }
+
+            return card;
+        }
+
+        function loadLevelRegistry() {
+            const levelSelector = document.querySelector('.level-selector');
+            levelSelector.innerHTML = `
+                <h2>Select Level</h2>
+                <div class="level-navigation">
+                    <div id="current-level"></div>
+                    <div class="nav-buttons">
+                        <div class="nav-section">
+                            <button class="nav-button prev" onclick="showPreviousLevel()"></button>
+                        </div>
+                        <div class="nav-section">
+                            <button class="nav-button next" onclick="showNextLevel()"></button>
+                        </div>
+                    </div>
+                </div>
+                <button class="back-button" onclick="backToMenu()">Back to Menu</button>
+            `;
+
+            function loadLevelFile(levelNumber) {
+                return new Promise((resolve) => {
+                    const script = document.createElement('script');
+                    script.src = `Levels/level${levelNumber}.js`;
+                    script.onload = () => {
+                        const latestLevel = window.levelRegistry[window.levelRegistry.length - 1];
+                        if (latestLevel) {
+                            const previousLevelCompleted = levelNumber === 1 || 
+                                (localStorage.getItem(`level${levelNumber-1}_completion`) >= 100);
+                            const isLocked = levelNumber > 1 && !previousLevelCompleted;
+                            
+                            levels.push({
+                                level: latestLevel,
+                                isLocked: isLocked
+                            });
+                        }
+                        resolve();
+                    };
+                    script.onerror = () => resolve();
+                    document.body.appendChild(script);
+                });
+            }
+
+            // Load all levels
+            const loadPromises = [];
+            for (let i = 1; i <= 500; i++) {
+                loadPromises.push(loadLevelFile(i));
+            }
+
+            Promise.all(loadPromises).then(() => {
+                showLevel(0);
+                updateNavigationButtons();
+            });
+        }
+
+        function showLevel(index) {
+            if (index >= 0 && index < levels.length) {
+                currentLevelIndex = index;
+                const levelContainer = document.getElementById('current-level');
+                levelContainer.innerHTML = '';
+                levelContainer.appendChild(createLevelCard(levels[index].level, levels[index].isLocked));
+                updateNavigationButtons();
+            }
+        }
+
+        function showNextLevel() {
+            if (currentLevelIndex < levels.length - 1) {
+                showLevel(currentLevelIndex + 1);
+                
+            }
+        }
+
+        function showPreviousLevel() {
+            if (currentLevelIndex > 0) {
+                showLevel(currentLevelIndex - 1);
+            }
+        }
+
+        function updateNavigationButtons() {
+            const prevButton = document.querySelector('.nav-button.prev');
+            const nextButton = document.querySelector('.nav-button.next');
+            
+            prevButton.style.visibility = currentLevelIndex > 0 ? 'visible' : 'hidden';
+            nextButton.style.visibility = currentLevelIndex < levels.length - 1 ? 'visible' : 'hidden';
+        }
+
+        // Call this when the page loads
+        window.addEventListener('load', loadLevelRegistry);
+    </script>
+</body>
+</html>

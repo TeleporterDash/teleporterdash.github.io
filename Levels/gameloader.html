@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Level 1</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #1a1a1a;
+            font-family: Arial, sans-serif;
+            transition: background-color 1s ease;
+        }
+        #gameContainer {
+            position: relative;
+            width: 1000px;
+            height: 400px;
+            overflow: hidden;
+            perspective: 1000px;
+            transition: none;
+            --from-color: #000000;
+            --to-color: #000000;
+            background-color: var(--from-color);
+            will-change: background-color;
+        }
+        #cameraContainer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.1s ease-out;
+        }
+        #heightIndicator {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 5px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            z-index: 1001;
+        }
+        #playerIndicator {
+            position: absolute;
+            right: -2.5px;
+            width: 10px;
+            height: 10px;
+            background: #00ff00;
+            border-radius: 50%;
+            transform: translateY(-50%);
+            transition: top 0.1s ease-out;
+        }
+        #player {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: #1ce92d;
+            bottom: 50px;
+            left: 100px;
+            z-index: 1000;
+            transform-origin: center;
+        }
+        .platform {
+            position: absolute;
+            background: #4287f5;
+            bottom: 50px;
+        }
+        .spike {
+            position: absolute;
+            bottom: 50px;
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 30px solid #ff0000;
+        }
+        #ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 50px;
+            background: #333;
+        }
+        #score {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 24px;
+        }
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 48px;
+            display: none;
+            text-align: center;
+        }
+        #restartBtn {
+            padding: 10px 20px;
+            font-size: 18px;
+            margin-top: 20px;
+            cursor: pointer;
+            background: #00ff00;
+            border: none;
+            border-radius: 5px;
+        }
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #00ff00;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        
+        .teleporter {
+            position: absolute;
+            width: 30px;
+            height: 60px;
+            background: linear-gradient(to right, #ff00ff, #8c00ff);
+            bottom: 50px;
+            border-radius: 15px;
+            animation: glow 1s infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { box-shadow: 0 0 5px #ff00ff; }
+            to { box-shadow: 0 0 20px #ff00ff; }
+        }
+
+        /* Add level complete styling */
+        #levelComplete {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00ff00;
+            font-size: 48px;
+            display: none;
+            text-align: center;
+            z-index: 100;
+        }
+
+        #progressContainer {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 200px;
+            color: white;
+            font-size: 18px;
+            text-align: left;
+            z-index: 1001;
+        }
+
+        #progressBar {
+            width: 100%;
+            height: 10px;
+            background-color: rgba(51, 51, 51, 0.5);
+            border-radius: 5px;
+            margin-top: 5px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #progressFill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #4287f5);
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+
+        /* Add tooltip styling */
+        [title] {
+            position: relative;
+            cursor: help;
+        }
+
+        [title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 5px;
+            font-size: 14px;
+            white-space: nowrap;
+            z-index: 1001;
+        }
+
+        /* Loading animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Add better touch controls and responsive design */
+        @media (max-width: 768px) {
+            #gameContainer {
+                width: 100%;
+                height: 300px;
+            }
+        }
+
+        #muteButton {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 20px;
+            z-index: 1001;
+        }
+
+        #pauseButton {
+            position: fixed;
+            top: 20px;
+            right: 70px;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 20px;
+            z-index: 1001;
+        }
+
+        #pauseMenu {
+            z-index: 2000;
+        }
+
+        @keyframes backgroundTransition {
+            0% { 
+                background-color: var(--from-color);
+            }
+            100% { 
+                background-color: var(--to-color);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="cameraContainer">
+            <div id="levelComplete">
+                Level Complete!
+                <br>
+                <button id="nextLevelBtn" style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Next Level</button>
+                <button onclick="window.location.href='../TDMenu.html'" style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Back to Menu</button>
+            </div>
+            <div id="player"></div>
+            <div id="ground"></div>
+        </div>
+        <div id="progressContainer">
+            Completion: <span id="progressText">0%</span>
+            <div id="progressBar">
+                <div id="progressFill"></div>
+            </div>
+        </div>
+        <div id="heightIndicator">
+            <div id="playerIndicator"></div>
+        </div>
+        <button id="muteButton">🔊</button>
+        <button id="pauseButton">⏸</button>
+        <div id="gameOver">
+            Game Over!
+            <br>
+            <button id="restartBtn">Try Again</button>
+            <button onclick="window.location.href='../TDMenu.html'" style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin-top: 10px; cursor: pointer;">Back to Menu</button>
+        </div>
+        <div id="settingsMenu" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 20px; border-radius: 10px; color: white; text-align: center; z-index: 1000;">
+            <h2>Level Settings</h2>
+            
+            <!-- Volume Control with tooltip -->
+            <div style="margin: 20px 0;" title="Adjust the game's overall volume">
+                <label>Volume: </label>
+                <input type="range" id="volumeSlider" min="0" max="100" value="90" style="width: 200px;">
+                <span id="volumeValue">90%</span>
+            </div>
+
+            <!-- Practice Mode with tooltip -->
+            <div style="margin: 20px 0;" title="In practice mode, you won't die and can practice the level freely">
+                <label>Practice Mode: </label>
+                <input type="checkbox" id="practiceMode">
+            </div>
+
+            <!-- Custom Controls with tooltip -->
+            <div style="margin: 20px 0;" title="Choose your preferred control method">
+                <label>Control Method: </label>
+                <select id="controlMethod" style="padding: 5px; margin-left: 10px;">
+                    <option value="space">Spacebar</option>
+                    <option value="click">Mouse Click</option>
+                    <option value="both" selected>Both</option>
+                </select>
+            </div>
+
+            <!-- Auto-Restart with tooltip -->
+            <div style="margin: 20px 0;" title="Automatically restart the level when you die">
+                <label>Auto-Restart: </label>
+                <input type="checkbox" id="autoRestart">
+            </div>
+
+            <!-- Speed Control with tooltip -->
+            <div style="margin: 20px 0;" title="Adjust the game speed (Practice Mode only)">
+                <label>Game Speed: </label>
+                <select id="gameSpeed" style="padding: 5px; margin-left: 10px;">
+                    <option value="0.5">0.5x</option>
+                    <option value="1" selected>1x</option>
+                    <option value="2">2x</option>
+                    <option value="3">3x</option>
+                </select>
+            </div>
+
+            <!-- Visual Effects with tooltip -->
+            <div style="margin: 20px 0;" title="Toggle particle effects and visual enhancements">
+                <label>Visual Effects: </label>
+                <input type="checkbox" id="visualEffects" checked>
+            </div>
+
+            <!-- Loading animation -->
+            <div id="loadingAnimation" style="display: none; margin: 20px 0;">
+                <div style="width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #00ff00; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                <p>Preparing Level...</p>
+            </div>
+
+            <button id="startLevelBtn" style="background: #00ff00; color: black; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+                Start Level
+            </button>
+        </div>
+        <div id="pauseMenu" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 20px; border-radius: 10px; color: white; text-align: center; z-index: 2000;">
+            <h2>Game Paused</h2>
+            <button id="resumeBtn" style="background: #00ff00; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Resume</button>
+            <button id="restartFromPauseBtn" style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Restart</button>
+            <button onclick="window.location.href='../TDMenu.html'" style="background: #ff4444; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Exit to Menu</button>
+        </div>
+    </div>
+
+    <script>
+        // Global level data variables
+        let levelMatrix = [0];      // Stores the level layout
+        let levelTitle;            // Stores the level name
+        let levelMusic;            // Stores the path to level music
+        let levelId;              // Stores the unique level identifier
+
+        /**
+         * Initializes level data either from a test level or from a level file
+         * Returns a Promise that resolves when level data is loaded
+         */
+        async function initializeLevelData() {
+            return new Promise((resolve, reject) => {
+                if (window.location.search.includes('test=true')) {
+                    // Load test level data from URL parameters (used by level editor)
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const testData = JSON.parse(decodeURIComponent(urlParams.get('data')));
+                    levelMatrix = testData.matrix;
+                    levelTitle = testData.name;
+                    levelMusic = testData.music;
+                    levelId = testData.id;
+                    document.title = levelTitle;
+                    resolve();
+                } else {
+                    // Load regular level data from level files
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const levelNumber = urlParams.get('level') || '1';  // Default to level 1 if no level specified
+                    
+                    // Dynamically load the level script file
+                    const levelScript = document.createElement('script');
+                    levelScript.src = `level${levelNumber}.js`;
+                    levelScript.onload = () => {
+                        if (window.levelData) {
+                            // Transfer level data from loaded script to global variables
+                            levelMatrix = window.levelData.matrix;
+                            levelTitle = window.levelData.title;
+                            levelMusic = window.levelData.music;
+                            levelId = window.levelData.id;
+                            document.title = levelTitle;
+                            setupAudio();           // Initialize audio after level data is loaded
+                            calculateTotalBlocks(); // Calculate level statistics
+                            resolve();
+                        } else {
+                            reject('Level data not found!');
+                        }
+                    };
+                    levelScript.onerror = () => {
+                        console.error(`Failed to load level${levelNumber}.js`);
+                        window.location.href = '../TDMenu.html';  // Return to menu if level file not found
+                    };
+                    document.body.appendChild(levelScript);
+                }
+            });
+        }
+
+        // Game constants to avoid magic numbers
+        const CONSTANTS = {
+            GRAVITY: 0.6,           // Rate at which player falls
+            JUMP_FORCE: -15,        // Initial upward velocity when jumping
+            BASE_GAME_SPEED: 8,     // Base movement speed of the level
+            COLUMN_WIDTH: 40,       // Width of each column in the level matrix
+            GROUND_HEIGHT: 50,      // Height of the ground from bottom of container
+        };
+
+        // Game state variables
+        let isJumping = false;              // Whether player is currently jumping
+        let gravity = CONSTANTS.GRAVITY;     // Current gravity value (can be modified by power-ups)
+        let jumpForce = CONSTANTS.JUMP_FORCE;// Current jump force (can be modified by power-ups)
+        let playerVelocity = 0;             // Current vertical velocity of player
+        let gameSpeed = CONSTANTS.BASE_GAME_SPEED; // Current game speed
+        let isGameOver = false;             // Whether the game is in a "game over" state
+        let rotation = 0;                   // Current rotation of the player sprite
+        let obstacles = [];                 // Array of all active obstacles
+        let animationFrameId;              // ID of the current animation frame
+        let isLevelComplete = false;       // Whether the level has been completed
+        let currentColumn = 0;             // Current column position in the level
+        let doubleJumpAvailable = true;    // Whether double jump is available
+        let particles = [];                // Array of active particle effects
+        let isOnPlatform = false;         // Whether player is standing on a platform
+
+        // Progress tracking variables
+        const progressText = document.getElementById('progressText');
+        const progressFill = document.getElementById('progressFill');
+        const totalColumns = levelMatrix[0].length;
+
+        // Jump buffer timing for more responsive controls
+        let jumpBufferTime = 100; // milliseconds - time window for buffering jump inputs
+        let lastJumpPressTime = 0;
+
+        // Progress update timing to optimize performance
+        let lastProgressUpdate = 0;
+        const progressUpdateInterval = 16; // ~60fps update frequency for progress bar
+        let totalBlocks = 0;              // Total number of blocks in the level
+        let passedBlocks = 0;             // Number of blocks the player has passed
+
+        // Position of the finish line in the level matrix
+        let finishLinePosition = 0;
+
+        // Audio elements for game sounds
+        let backgroundMusic;   // Background music audio element
+        let jumpSound;        // Sound effect for jumping
+        let deathSound;       // Sound effect for player death
+        let completionSound;  // Sound effect for level completion
+        let isMuted = false;  // Global mute state
+
+        // Game mode flags
+        let isPracticeMode = false;  // Practice mode disables death
+        let isLevelStarted = false;  // Whether the level has begun
+
+        // Auto-restart settings
+        let autoRestartEnabled = false;  // Whether to automatically restart on death
+        let isRestarting = false;       // Whether the game is currently restarting
+
+        // Pause state
+        let isPaused = false;
+        const pauseMenu = document.getElementById('pauseMenu');
+
+        // Check if level complete
+        const levelCompleteElement = document.getElementById('levelComplete');
+        const gameOverElement = document.getElementById('gameOver');
+
+        // Game state object for managing complex state
+        const gameState = {
+            isJumping: false,
+            isPracticeMode: false,
+            isGameOver: false,
+            currentColumn: 0,
+            // etc...
+        };
+
+        // Settings manager for persistent game settings
+        const SettingsManager = {
+            current: {
+                volume: 90,
+                practiceMode: false,
+                controlMethod: 'both'
+            },
+            save() {
+                localStorage.setItem('gameSettings', JSON.stringify(this.current));
+            },
+            load() {
+                // Load saved settings
+            }
+        };
+
+        /**
+         * Sets up audio elements with the selected music and sound effects
+         * Includes error handling for failed audio loading
+         */
+        function setupAudio() {
+            try {
+                if (!levelMusic) {
+                    console.error('No music specified for level');
+                    return;
+                }
+                
+                backgroundMusic = new Audio(levelMusic);
+                backgroundMusic.onerror = (e) => {
+                    console.error('Failed to load background music:', e);
+                    isMuted = true; // Fallback to muted if audio fails
+                };
+                backgroundMusic.loop = true;
+                backgroundMusic.volume = 0.9;
+                
+                // Load sound effects with error handling
+                const loadSoundEffect = (path) => {
+                    const audio = new Audio(path);
+                    audio.onerror = (e) => console.error(`Failed to load sound effect ${path}:`, e);
+                    return audio;
+                };
+                
+                jumpSound = loadSoundEffect('../Sound/Basic Soundeffects/jumptd.mp3');
+                deathSound = loadSoundEffect('../Sound/Basic Soundeffects/deathtd.ogg');
+                completionSound = loadSoundEffect('../Sound/Basic Soundeffects/lvlcompletetd.mp3');
+            } catch (error) {
+                console.error("Audio setup failed:", error);
+                isMuted = true; // Fallback to muted
+            }
+        }
+
+        /**
+         * Toggles the mute state of all game audio
+         * Affects background music and all sound effects
+         */
+        function toggleMute() {
+            isMuted = !isMuted;
+            backgroundMusic.muted = isMuted;
+            jumpSound.muted = isMuted;
+            deathSound.muted = isMuted;
+            completionSound.muted = isMuted;
+        }
+
+        // Add this after other event listeners
+        document.getElementById('muteButton').addEventListener('click', function() {
+            toggleMute();
+            this.textContent = isMuted ? '🔈' : '🔊';
+        });
+
+        /**
+         * Creates particle effects with specified color
+         * @param {string} color - Color of particles (e.g., '#ff0000' for red)
+         */
+        function createParticles(color) {
+            for (let i = 0; i < 10; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // Get player position relative to the game container
+                const playerRect = player.getBoundingClientRect();
+                const containerRect = gameContainer.getBoundingClientRect();
+                
+                // Calculate centered position relative to player
+                const centerX = playerRect.left - containerRect.left + (playerRect.width / 2);
+                const centerY = playerRect.top - containerRect.top;
+                
+                // Set initial particle position
+                particle.style.left = centerX + 'px';
+                particle.style.top = centerY + 'px';
+                particle.style.background = color;
+                gameContainer.appendChild(particle);
+                
+                // Increased velocity range for more dramatic effect
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = 8 + Math.random() * 8;
+                particles.push({
+                    element: particle,
+                    vx: Math.cos(angle) * velocity,
+                    vy: Math.sin(angle) * velocity,
+                    life: 1
+                });
+            }
+        }
+
+        /**
+         * Creates an obstacle based on the type specified in the level matrix
+         * @param {number} type - The type of obstacle (0: empty, 1: platform, 2: spike, 3: teleporter, 4: finish)
+         * @param {number} row - The row position in the level matrix
+         */
+        function createObstacleFromMatrix(type, row) {
+            // Handle empty blocks (type 0)
+            if (type === 0) {
+                const emptyBlock = document.createElement('div');
+                emptyBlock.className = 'empty-block';
+                emptyBlock.type = 'empty';
+                emptyBlock.style.position = 'absolute';
+                emptyBlock.style.width = '30px';
+                emptyBlock.style.height = '30px';
+                emptyBlock.style.left = gameContainer.offsetWidth + 'px';
+                
+                // Invert the row calculation to start from bottom
+                const baseHeight = 50;
+                const rowSpacing = 60;
+                const invertedRow = (levelMatrix.length - 1) - row;
+                emptyBlock.style.bottom = (baseHeight + (invertedRow * rowSpacing)) + 'px';
+                
+                document.getElementById('cameraContainer').appendChild(emptyBlock);
+                obstacles.push({ element: emptyBlock, type: 'empty' });
+                return;
+            }
+
+            // Create obstacle element based on type
+            const obstacle = document.createElement('div');
+            
+            if (type === 4) { // Finish line
+                obstacle.className = 'finishLine';
+                obstacle.style.width = '10px';
+                obstacle.style.height = '350px';
+                obstacle.style.background = '#00ff00';
+                obstacle.type = 'finish';
+                obstacle.style.position = 'absolute';
+                obstacle.style.bottom = '50px'; // Align with ground
+            } else if (type === 2) { // Spike
+                obstacle.className = 'spike';
+                obstacle.type = 'spike';
+            } else if (type === 3) { // Teleporter
+                obstacle.className = 'teleporter';
+                obstacle.type = 'teleporter';
+            } else if (type === 1) { // Platform
+                obstacle.className = 'platform';
+                obstacle.type = 'platform';
+                obstacle.style.width = '45px';
+                obstacle.style.height = '45px';
+            }
+            
+            // Position the obstacle
+            obstacle.style.left = gameContainer.offsetWidth + 'px';
+            
+            // Calculate vertical position (inverted row calculation)
+            const baseHeight = 50;
+            const rowSpacing = 60;
+            const invertedRow = (levelMatrix.length - 1) - row;
+            obstacle.style.bottom = (baseHeight + (invertedRow * rowSpacing)) + 'px';
+            
+            // Add to game container and obstacles array
+            document.getElementById('cameraContainer').appendChild(obstacle);
+            obstacles.push({ element: obstacle, type: obstacle.type });
+        }
+
+        /**
+         * Handles level completion state and UI
+         * Called when player reaches the finish line
+         */
+        function levelComplete() {
+            isLevelComplete = true;
+            if (levelCompleteElement) {  // Add null check
+                levelCompleteElement.style.display = 'block';
+            }
+            
+            // Play completion sound and fade music
+            if (!isMuted) {
+                completionSound.currentTime = 0;
+                completionSound.play();
+                fadeOutMusic();
+            }
+                    
+            // Update progress indicators
+            progressFill.style.width = '100%';
+            progressText.textContent = '100% (Level Complete!)';
+            
+            // Setup next level button
+            const nextLevelBtn = document.getElementById('nextLevelBtn');
+            
+            // Handle next level button visibility
+            if (window.location.search.includes('test=true')) {
+                nextLevelBtn.style.display = 'none';
+            } else {
+                const nextLevelNumber = parseInt(levelId) + 1;
+                
+                nextLevelBtn.onclick = () => {
+                    window.location.href = `gameloader.html?level=${nextLevelNumber}`;
+                };
+                
+                // Check if next level exists
+                const checkScript = document.createElement('script');
+                checkScript.src = `level${nextLevelNumber}.js`;
+                checkScript.onload = () => {
+                    nextLevelBtn.style.display = 'inline-block';
+                };
+                checkScript.onerror = () => {
+                    nextLevelBtn.style.display = 'none';
+                };
+                document.body.appendChild(checkScript);
+            }
+                    
+            cleanupParticles();
+            cancelAnimationFrame(animationFrameId);
+        }
+
+        // Add camera-related variables
+        let cameraOffsetY = 0;
+        const CAMERA_FOLLOW_THRESHOLD = 50; // Reduced from 100 to make camera more responsive
+        const MAX_CAMERA_SPEED = 20; // Increased from 15 to make camera movement smoother
+
+        /**
+         * Main game loop that updates all game elements
+         * Called every animation frame when game is running
+         */
+        function updateGame() {
+            // Don't update if game isn't in active state
+            if (!isLevelStarted || isGameOver || isLevelComplete) return;
+            if (isPaused) {
+                animationFrameId = requestAnimationFrame(updateGame);
+                return;
+            }
+            
+            // Add background color update
+            updateBackgroundColor();
+            
+            // Apply game speed to obstacle movement
+            const currentSpeed = isPracticeMode ? gameSpeed : 5;  // Default speed is 5
+            
+            // Create new obstacles when needed
+            // Only creates obstacles when there's enough space from the last one
+            if (currentColumn < levelMatrix[0].length && 
+                (obstacles.length === 0 || 
+                 gameContainer.offsetWidth - obstacles[obstacles.length - 1]?.element.offsetLeft > CONSTANTS.COLUMN_WIDTH)) {
+                for (let row = 0; row < levelMatrix.length; row++) {
+                    createObstacleFromMatrix(levelMatrix[row][currentColumn], row);
+                }
+                currentColumn++;
+                
+                // Only update progress when new obstacles are created
+                updateProgress();
+            }
+
+            // Player physics calculations
+            playerVelocity += gravity;
+            const currentBottom = parseInt(window.getComputedStyle(player).bottom);
+            let newBottom = currentBottom - playerVelocity;
+
+            // Check ground collision with proper constants
+            if (newBottom <= CONSTANTS.GROUND_HEIGHT) {
+                newBottom = CONSTANTS.GROUND_HEIGHT;
+                isJumping = false;
+                doubleJumpAvailable = true;
+                playerVelocity = 0;
+            }
+
+            // Update player position
+            player.style.bottom = `${newBottom}px`;
+            player.style.left = '100px'; // Keep player's horizontal position fixed
+
+            // Rotate player during jump
+            if (isJumping) {
+                rotation += 5;
+                player.style.transform = `rotate(${rotation}deg)`;
+            } else {
+                rotation = 0;
+                player.style.transform = `rotate(${rotation}deg)`;
+            }
+
+            // Update obstacles with optimization
+            const playerRect = player.getBoundingClientRect();
+            const containerLeft = gameContainer.getBoundingClientRect().left;
+            
+            // Process each obstacle
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obstacle = obstacles[i];
+                let obstacleLeft = parseInt(obstacle.element.style.left);
+                obstacle.element.style.left = (obstacleLeft - currentSpeed) + 'px';
+
+                // Remove off-screen obstacles to improve performance
+                if (obstacleLeft < -50) {
+                    obstacle.element.remove();
+                    obstacles.splice(i, 1);
+                    continue;
+                }
+
+                // Only check collisions for nearby obstacles
+                if (Math.abs(obstacleLeft - (playerRect.left - containerLeft)) < 100) {
+                    const collision = checkCollision(player, obstacle.element);
+                    if (collision) {
+                        if (obstacle.type === 'finish') {
+                            levelComplete();
+                        } else if (obstacle.type === 'spike') {
+                            gameOver();
+                        } else if (obstacle.type === 'teleporter') {
+                            player.style.bottom = (parseInt(player.style.bottom) + 100) + 'px';
+                            playerVelocity = 0;
+                            createParticles('#ff00ff'); // Purple particles on teleport
+                        } else if (obstacle.type === 'platform') {
+                            handlePlatformCollision(playerRect, obstacle.element);
+                        }
+                    }
+                }
+            }
+
+            // Update particle effects
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const particle = particles[i];
+                particle.vy += 0.5;  // Gravity effect on particles
+                particle.life -= 0.02;  // Particle fade out
+                
+                // Remove dead particles
+                if (particle.life <= 0) {
+                    particle.element.remove();
+                    particles.splice(i, 1);
+                    continue;
+                }
+                
+                // Update particle position
+                const currentLeft = parseFloat(particle.element.style.left);
+                const currentTop = parseFloat(particle.element.style.top);
+                
+                particle.element.style.left = (currentLeft + particle.vx) + 'px';
+                particle.element.style.top = (currentTop + particle.vy) + 'px';
+                particle.element.style.opacity = particle.life;
+            }
+
+            // Continue game loop if game is still active
+            if (!isGameOver && !isLevelComplete) {
+                animationFrameId = requestAnimationFrame(updateGame);
+            }
+
+            // Update camera position to follow player
+            const containerHeight = gameContainer.offsetHeight;
+            const targetCameraY = Math.max(0, newBottom - containerHeight / 2);
+            
+            // Smooth camera movement
+            const cameraDistance = targetCameraY - cameraOffsetY;
+            if (Math.abs(cameraDistance) > CAMERA_FOLLOW_THRESHOLD) {
+                const cameraSpeed = Math.min(Math.abs(cameraDistance) * 0.1, MAX_CAMERA_SPEED);
+                cameraOffsetY += Math.sign(cameraDistance) * cameraSpeed;
+            }
+
+            // Apply camera transform
+            const cameraContainer = document.getElementById('cameraContainer');
+            cameraContainer.style.transform = `translateY(${cameraOffsetY}px)`;
+
+            // Update height indicator
+            const playerIndicator = document.getElementById('playerIndicator');
+            const heightIndicator = document.getElementById('heightIndicator');
+            const maxHeight = levelMatrix.length * 60;
+            const invertedPosition = maxHeight - newBottom;
+            const indicatorPosition = (invertedPosition / maxHeight) * heightIndicator.offsetHeight;
+            playerIndicator.style.top = `${Math.min(heightIndicator.offsetHeight, Math.max(0, indicatorPosition))}px`;
+        }
+
+        /**
+         * Handles collision detection between player and obstacles
+         * @param {HTMLElement} player - The player element
+         * @param {HTMLElement} obstacle - The obstacle element to check collision with
+         * @returns {boolean} - True if collision detected, false otherwise
+         */
+        function checkCollision(player, obstacle) {
+            if (obstacle.classList.contains('empty-block')) return false;
+            
+            // Get raw positions without camera influence
+            const playerBottom = parseInt(player.style.bottom);
+            const playerLeft = parseInt(player.style.left);
+            const obstacleBottom = parseInt(obstacle.style.bottom);
+            const obstacleLeft = parseInt(obstacle.style.left);
+            
+            const tolerance = 5;  // Small overlap allowance for smoother collision
+            const playerSize = 30; // Player width/height
+            const obstacleSize = obstacle.type === 'platform' ? 45 : 30;
+
+            // Check for overlap in both x and y directions
+            return !(playerLeft + playerSize - tolerance < obstacleLeft || 
+                    playerLeft + tolerance > obstacleLeft + obstacleSize || 
+                    playerBottom + playerSize - tolerance < obstacleBottom || 
+                    playerBottom + tolerance > obstacleBottom + obstacleSize);
+        }
+
+        /**
+         * Handles specific collision logic for platforms
+         * Includes landing detection and side collision
+         */
+        function handlePlatformCollision(playerRect, platform) {
+            // Get raw positions without camera influence
+            const playerBottom = parseInt(player.style.bottom);
+            const platformBottom = parseInt(platform.style.bottom);
+            const playerLeft = parseInt(player.style.left);
+            const platformLeft = parseInt(platform.style.left);
+            
+            // Calculate overlap using absolute positions
+            const horizontalOverlap = Math.min(playerLeft + 30, platformLeft + 45) - 
+                                    Math.max(playerLeft, platformLeft);
+            const playerWidth = 30;
+            
+            if (playerVelocity > 0 && // Moving downward
+                playerBottom <= platformBottom + 45 && // Platform height is 45
+                playerBottom >= platformBottom &&
+                horizontalOverlap > playerWidth * 0.3) {
+                
+                // Safe landing on platform
+                isOnPlatform = true;
+                isJumping = false;
+                doubleJumpAvailable = true;
+                playerVelocity = 0;
+                
+                // Set player position on top of platform using absolute values
+                player.style.bottom = (platformBottom + 45) + 'px';
+            } else if (!isPracticeMode) {
+                // Side collision check using absolute positions
+                const playerCenterX = playerLeft + (playerWidth / 2);
+                const significantOverlap = horizontalOverlap > playerWidth * 0.4;
+                
+                if (significantOverlap && 
+                    playerCenterX > platformLeft + 5 && 
+                    playerCenterX < platformLeft + 40 &&
+                    playerBottom > platformBottom + 15) {
+                    gameOver();
+                }
+            }
+        }
+
+        /**
+         * Handles game over state and UI
+         * Called when player hits spikes or collides with obstacles
+         */
+        function gameOver() {
+            if (!isPracticeMode) {
+                isGameOver = true;
+                
+                if (gameOverElement) {
+                    gameOverElement.style.display = 'block';
+                }
+                
+                if (!isMuted) {
+                    backgroundMusic.pause();
+                    deathSound.currentTime = 0;
+                    deathSound.play();
+                }
+                
+                createParticles('#ff0000'); // Red particles on death
+                
+                if (autoRestartEnabled) {
+                    setTimeout(() => {
+                        restartGame();
+                    }, 1000);
+                } else {
+                    gameOverElement.style.display = 'block';
+                }
+                
+                cancelAnimationFrame(animationFrameId);
+            } else {
+                // In practice mode, just reset position but keep playing
+                player.style.bottom = '50px';
+                playerVelocity = 0;
+                rotation = 0;
+            }
+        }
+
+        /**
+         * Restarts the game, resetting all necessary variables and states
+         * Called after game over or when manually restarting
+         */
+        function restartGame() {
+            // Cancel any pending animation frames
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            
+            // Reset pause state
+            isPaused = false;
+            pauseMenu.style.display = 'none';
+            
+            // Reset game state
+            isGameOver = false;
+            isLevelComplete = false;
+            currentColumn = 0;
+            gameSpeed = 5;
+            playerVelocity = 0;
+            rotation = 0;
+            isOnPlatform = false;
+            
+            // Reset UI elements
+            if (levelCompleteElement) {  // Add null check
+                levelCompleteElement.style.display = 'none';
+            }
+            if (gameOverElement) {  // Add null check
+                gameOverElement.style.display = 'none';
+            }
+            player.style.bottom = '50px';
+            player.style.transform = 'rotate(0deg)';
+
+            // Clear obstacles and particles
+            obstacles.forEach(obstacle => {
+                if (obstacle.element && obstacle.element.parentNode) {
+                    obstacle.element.remove();
+                }
+            });
+            obstacles = [];
+            
+            cleanupParticles();
+            
+            // Reset jump state
+            doubleJumpAvailable = true;
+            passedBlocks = 0;
+            
+            // Reset progress bar
+            progressFill.style.width = '0%';
+            progressText.textContent = '0%';
+
+            // Reset and replay background music
+            if (!isMuted) {
+                try {
+                    backgroundMusic.pause();
+                    backgroundMusic.currentTime = 0;
+                    backgroundMusic.play().catch(error => console.log("Audio playback failed:", error));
+                } catch (error) {
+                    console.log("Audio reset failed:", error);
+                }
+            }
+            
+            // Reset player position
+            player.style.bottom = `${CONSTANTS.GROUND_HEIGHT}px`;
+            playerVelocity = 0;
+            rotation = 0;
+            player.style.transform = 'rotate(0deg)';
+
+            // Reset camera position
+            cameraOffsetY = 0;
+            document.getElementById('cameraContainer').style.transform = 'translateY(0)';
+            
+            // Start game loop
+            updateGame();
+        }
+
+        // Event listeners for player input
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                jump();
+                e.preventDefault(); // Prevent page scrolling
+            }
+        });
+
+        document.addEventListener('touchstart', jump);
+        restartBtn.addEventListener('click', restartGame);
+
+        /**
+         * Handles player jumping mechanics
+         * Includes double jump and jump buffering
+         */
+        function jump() {
+            const currentTime = Date.now();
+            
+            // Check if jump is allowed (not game over and either on ground or can double jump)
+            if (!isGameOver && (
+                (!isJumping && !isOnPlatform) || 
+                (doubleJumpAvailable && currentTime - lastJumpPressTime > jumpBufferTime)
+            )) {
+                if (isJumping) {
+                    doubleJumpAvailable = false;
+                }
+                isJumping = true;
+                isOnPlatform = false;
+                playerVelocity = jumpForce;
+                
+                lastJumpPressTime = currentTime;
+                
+                // Play jump sound if available and not muted
+                if (!isMuted && jumpSound?.readyState === 4) {
+                    jumpSound.currentTime = 0;
+                    jumpSound.play().catch(error => console.log("Jump sound failed:", error));
+                }
+            }
+        }
+
+        /**
+         * Updates the progress bar and level completion percentage
+         * Called from updateGame when new obstacles are created
+         * Throttled to avoid performance issues
+         */
+        function updateProgress() {
+            // Skip updates if game is in an end state
+            if (isGameOver || isLevelComplete) return;
+            
+            // Throttle updates based on interval
+            const currentTime = Date.now();
+            if (currentTime - lastProgressUpdate < progressUpdateInterval) return;
+            
+            // Calculate progress percentage with smoother increments
+            const totalDistance = levelMatrix[0].length;
+            const delayColumns = 3; // This creates our 2-second delay
+            const adjustedColumn = Math.max(0, currentColumn - delayColumns);
+            
+            // Calculate progress with finer granularity
+            const progress = (adjustedColumn / totalDistance) * 100;
+            const clampedProgress = Math.min(Math.round(progress), 99); // Cap at 99% until complete
+            
+            // Only show 100% when level is actually complete
+            const finalProgress = isLevelComplete ? 100 : 
+                         progress >= 98 ? 99 : // Force 99% when near the end
+                         clampedProgress;
+            
+            // Update UI
+            progressText.textContent = `${finalProgress}%`;
+            progressFill.style.width = `${finalProgress}%`;
+            
+            // Update progress bar colors
+            if (finalProgress > 75) {
+                progressFill.style.background = 'linear-gradient(90deg, #00ff00, #4287f5)';
+            } else if (finalProgress > 50) {
+                progressFill.style.background = 'linear-gradient(90deg, #ffff00, #00ff00)';
+            } else if (finalProgress > 25) {
+                progressFill.style.background = 'linear-gradient(90deg, #ffa500, #ffff00)';
+            }
+            
+            lastProgressUpdate = currentTime;
+        }
+
+        /**
+         * Calculates the total number of blocks in the level
+         * Used for progress tracking and level completion
+         */
+        function calculateTotalBlocks() {
+            // Search for finish line in level matrix
+            finishLinePosition = 0;
+            for (let col = 0; col < levelMatrix[0].length; col++) {
+                for (let row = 0; row < levelMatrix.length; row++) {
+                    if (levelMatrix[row][col] === 4) {  // 4 represents finish line
+                        finishLinePosition = col;
+                        break;
+                    }
+                }
+                if (finishLinePosition > 0) break;
+            }
+            
+            // Calculate total blocks up to finish line
+            totalBlocks = finishLinePosition * levelMatrix.length;
+            if (totalBlocks === 0) {
+                console.error('No finish line found in level matrix!');
+                totalBlocks = levelMatrix[0].length * levelMatrix.length;  // Fallback calculation
+            }
+        }
+
+        // Event listener for mute button
+        document.getElementById('muteButton').addEventListener('click', function() {
+            toggleMute();
+            this.textContent = isMuted ? '🔈' : '';  // Update icon based on mute state
+        });
+
+        /**
+         * Gradually reduces background music volume until silent
+         * Used during level completion and game over
+         */
+        function fadeOutMusic() {
+            if (backgroundMusic.volume > 0.02) {
+                backgroundMusic.volume -= 0.02;  // Reduce volume by 2%
+                setTimeout(fadeOutMusic, 100);   // Check again in 100ms
+            } else {
+                backgroundMusic.pause();
+                backgroundMusic.volume = 0.6;    // Reset volume for next time
+            }
+        }
+
+        /**
+         * Initializes level settings and UI controls
+         * Sets up event listeners for all game settings
+         */
+        function initializeLevel() {
+            // Get references to all UI elements
+            const settingsMenu = document.getElementById('settingsMenu');
+            const volumeSlider = document.getElementById('volumeSlider');
+            const volumeValue = document.getElementById('volumeValue');
+            const practiceModeCheckbox = document.getElementById('practiceMode');
+            const controlMethodSelect = document.getElementById('controlMethod');
+            const autoRestartCheckbox = document.getElementById('autoRestart');
+            const startLevelBtn = document.getElementById('startLevelBtn');
+            const loadingAnimation = document.getElementById('loadingAnimation');
+
+            // Set up volume control with real-time updates
+            volumeSlider.addEventListener('input', function() {
+                const volume = this.value;
+                volumeValue.textContent = volume + '%';
+                // Apply different volume levels to different sound types
+                backgroundMusic.volume = volume / 100;
+                jumpSound.volume = (volume / 100) * 0.2;      // Jump sound quieter
+                deathSound.volume = (volume / 100) * 0.7;     // Death sound moderate
+                completionSound.volume = (volume / 100) * 0.7; // Completion sound moderate
+            });
+
+            // Toggle for practice mode (immortality)
+            practiceModeCheckbox.addEventListener('change', function() {
+                isPracticeMode = this.checked;
+            });
+
+            /**
+             * Configures control scheme based on user selection
+             * @param {string} method - 'space', 'click', or 'both'
+             */
+            function setupControls(method) {
+                // Clean up existing listeners to prevent duplicates
+                document.removeEventListener('keydown', handleSpaceJump);
+                document.removeEventListener('mousedown', jump);
+                
+                // Apply new control scheme
+                if (method === 'space' || method === 'both') {
+                    document.addEventListener('keydown', handleSpaceJump);
+                }
+                if (method === 'click' || method === 'both') {
+                    document.addEventListener('mousedown', jump);
+                }
+            }
+
+            /**
+             * Handles spacebar input for jumping
+             * Prevents page scrolling on space press
+             */
+            function handleSpaceJump(e) {
+                if (e.code === 'Space') {
+                    jump();
+                    e.preventDefault();
+                }
+            }
+
+            // Initialize with both control methods
+            setupControls('both');
+
+            // Allow user to change control method during gameplay
+            controlMethodSelect.addEventListener('change', function() {
+                setupControls(this.value);
+            });
+
+            // Configure auto-restart feature
+            autoRestartCheckbox.addEventListener('change', function() {
+                autoRestartEnabled = this.checked;
+                // Persist setting in browser storage
+                localStorage.setItem('autoRestartEnabled', this.checked);
+            });
+
+            // Load previously saved auto-restart preference
+            const savedAutoRestart = localStorage.getItem('autoRestartEnabled');
+            if (savedAutoRestart !== null) {
+                autoRestartEnabled = savedAutoRestart === 'true';
+                autoRestartCheckbox.checked = autoRestartEnabled;
+            }
+
+            /**
+             * Handles level start sequence
+             * Shows loading animation and initializes game
+             */
+            startLevelBtn.addEventListener('click', function() {
+                const loadingAnimation = document.getElementById('loadingAnimation');
+                
+                // Visual feedback for loading
+                loadingAnimation.style.display = 'block';
+                startLevelBtn.style.display = 'none';
+
+                // Attempt to start background music
+                backgroundMusic.play().catch(error => {
+                    console.log("Audio autoplay prevented:", error);
+                });
+
+                // Delayed start to allow loading animation
+                setTimeout(() => {
+                    settingsMenu.style.display = 'none';
+                    isLevelStarted = true;
+                    updateGame();
+                }, 500);
+            });
+
+            // Game speed control for practice mode
+            const gameSpeedSelect = document.getElementById('gameSpeed');
+            gameSpeedSelect.addEventListener('change', function() {
+                if (isPracticeMode) {
+                    gameSpeed = parseFloat(this.value) * 8; // Scale base speed
+                }
+            });
+
+            /**
+             * Toggles particle effects on/off
+             * Replaces particle creation function based on setting
+             */
+            const visualEffectsCheckbox = document.getElementById('visualEffects');
+            visualEffectsCheckbox.addEventListener('change', function() {
+                if (!this.checked) {
+                    // Disable particles by replacing function with empty one
+                    window.createParticles = function() { return; };
+                } else {
+                    // Restore full particle creation functionality
+                    window.createParticles = function() {
+                        for (let i = 0; i < 5; i++) {
+                            const particle = document.createElement('div');
+                            particle.className = 'particle';
+                            const rect = player.getBoundingClientRect();
+                            particle.style.left = (rect.left + rect.width/2) + 'px';
+                            particle.style.bottom = (parseInt(player.style.bottom) || 50) + 'px';
+                            gameContainer.appendChild(particle);
+                            
+                            // Random particle movement
+                            const angle = Math.random() * Math.PI * 2;
+                            const velocity = 5 + Math.random() * 5;
+                            particles.push({
+                                element: particle,
+                                vx: Math.cos(angle) * velocity,
+                                vy: Math.sin(angle) * velocity,
+                                life: 1
+                            });
+                        }
+                    };
+                }
+            });
+
+            // Link practice mode with game speed control
+            practiceModeCheckbox.addEventListener('change', function() {
+                gameSpeedSelect.disabled = !this.checked;
+                if (!this.checked) {
+                    gameSpeedSelect.value = "1";
+                    gameSpeed = 8; // Reset to default
+                }
+            });
+
+            /**
+             * Cleanup function to remove event listeners
+             * Called when level is unloaded or restarted
+             */
+            const cleanup = () => {
+                document.removeEventListener('keydown', handleSpaceJump);
+                document.removeEventListener('mousedown', jump);
+                document.removeEventListener('touchstart', jump);
+            };
+            
+            // Store cleanup function for later use
+            window.cleanupLevelEvents = cleanup;
+        }
+
+        /**
+         * Helper function for handling jump inputs from different sources
+         * @param {Event} e - The input event (keyboard or mouse)
+         */
+        function handleJump(e) {
+            if (e.type === 'keydown' && e.code !== 'Space') return;
+            jump();
+        }
+
+        /**
+         * Optimized game loop using requestAnimationFrame
+         * @param {number} timestamp - Current timestamp from requestAnimationFrame
+         */
+        let lastTime = 0;
+        function gameLoop(timestamp) {
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+            updateGame(deltaTime);
+        }
+
+        /**
+         * Preloads all game assets before starting
+         * Returns a Promise that resolves when all assets are loaded
+         */
+        async function preloadAssets() {
+            await Promise.all([
+                loadAudio(),
+                loadImages(),
+                loadLevelData()
+            ]);
+        }
+
+        /**
+         * Toggles game pause state and updates UI accordingly
+         * Handles music pause/resume and button icons
+         */
+        function togglePause() {
+            if (isGameOver || isLevelComplete || !isLevelStarted) return;
+            
+            isPaused = !isPaused;
+            const pauseButton = document.getElementById('pauseButton');
+            
+            if (isPaused) {
+                pauseMenu.style.display = 'block';
+                pauseButton.textContent = '▶';  // Play icon
+                if (!isMuted && backgroundMusic) {
+                    backgroundMusic.pause();
+                }
+            } else {
+                pauseMenu.style.display = 'none';
+                pauseButton.textContent = '⏸';  // Pause icon
+                if (!isMuted && backgroundMusic) {
+                    backgroundMusic.play().catch(error => console.log("Audio resume failed:", error));
+                }
+            }
+        }
+
+        // Event listeners for pause functionality
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyP') {
+                togglePause();
+            }
+        });
+
+        // Resume game from pause menu
+        document.getElementById('resumeBtn').addEventListener('click', togglePause);
+
+        // Restart game from pause menu
+        document.getElementById('restartFromPauseBtn').addEventListener('click', () => {
+            pauseMenu.style.display = 'none';
+            isPaused = false;
+            restartGame();
+        });
+
+        // Toggle pause with pause button
+        document.getElementById('pauseButton').addEventListener('click', togglePause);
+
+        /**
+         * Initializes game elements and starts the game
+         * Called when window loads
+         */
+        window.onload = async function() {
+            try {
+                // Create UI elements first
+                if (!document.getElementById('cameraContainer')) {
+                    const cameraContainer = document.createElement('div');
+                    cameraContainer.id = 'cameraContainer';
+                    
+                    const elementsToMove = ['player', 'ground', 'progressContainer'];
+                    elementsToMove.forEach(id => {
+                        const element = document.getElementById(id);
+                        if (element) {
+                            cameraContainer.appendChild(element);
+                        }
+                    });
+                    
+                    gameContainer.insertBefore(cameraContainer, gameContainer.firstChild);
+                }
+
+                if (!document.getElementById('heightIndicator')) {
+                    const heightIndicator = document.createElement('div');
+                    heightIndicator.id = 'heightIndicator';
+                    const playerIndicator = document.createElement('div');
+                    playerIndicator.id = 'playerIndicator';
+                    heightIndicator.appendChild(playerIndicator);
+                    gameContainer.appendChild(heightIndicator);
+                }
+
+                // Load level data with retry mechanism
+                let retryCount = 0;
+                const maxRetries = 3;
+                
+                while (retryCount < maxRetries) {
+                    try {
+                        await initializeLevelData();
+                        break; // Exit loop if successful
+                    } catch (error) {
+                        retryCount++;
+                        if (retryCount === maxRetries) {
+                            throw new Error('Failed to load level data after multiple attempts');
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+                    }
+                }
+
+                // Verify level data before proceeding
+                if (!levelMatrix || !Array.isArray(levelMatrix) || levelMatrix.length === 0) {
+                    throw new Error('Invalid level data structure');
+                }
+
+                // Initialize game systems
+                setupAudio();
+                calculateTotalBlocks();
+                validateLevelData(levelMatrix);
+                initializeLevel();
+                initializeTouchControls();
+
+            } catch (error) {
+                console.error('Game initialization failed:', error);
+                
+                // Show error message to user
+                const errorMessage = document.createElement('div');
+                errorMessage.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(0, 0, 0, 0.9);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    text-align: center;
+                    z-index: 1000;
+                `;
+                errorMessage.innerHTML = `
+                    <h2>Failed to Load Level</h2>
+                    <p>Please try again or return to menu.</p>
+                    <button onclick="window.location.href='../TDMenu.html'" 
+                            style="background: #4285F4; color: white; padding: 10px 20px; 
+                                   border: none; border-radius: 5px; margin-top: 10px; 
+                                   cursor: pointer;">
+                        Return to Menu
+                    </button>
+                    <button onclick="window.location.reload()" 
+                            style="background: #00ff00; color: white; padding: 10px 20px; 
+                                   border: none; border-radius: 5px; margin-top: 10px; 
+                                   margin-left: 10px; cursor: pointer;">
+                        Try Again
+                    </button>
+                `;
+                document.body.appendChild(errorMessage);
+                
+                // Don't immediately redirect
+                // window.location.href = '../TDMenu.html';
+            }
+        };
+
+        // Navigate to next level when button clicked
+        document.getElementById('nextLevelBtn').addEventListener('click', function() {
+            const nextLevelNumber = parseInt(levelId) + 1;
+            window.location.href = `gameloader.html?level=${nextLevelNumber}`;
+        });
+
+        /**
+         * Sets up touch controls for mobile devices
+         * Prevents default scroll behavior
+         */
+        function initializeTouchControls() {
+            document.addEventListener('touchstart', function(e) {
+                e.preventDefault(); // Prevent scrolling
+                if (!isPaused && !isGameOver && !isLevelComplete) {
+                    jump();
+                }
+            }, { passive: false });
+        }
+
+        /**
+         * Removes all particle effects from the game
+         * Called during cleanup and level restart
+         */
+        function cleanupParticles() {
+            particles.forEach(p => {
+                if (p.element && p.element.parentNode) {
+                    p.element.remove();
+                }
+            });
+            particles = [];
+        }
+
+        /**
+         * Validates level data structure and content
+         * @param {Array<Array<number>>} matrix - The level layout matrix
+         * @throws {Error} If matrix format is invalid or finish line is missing
+         */
+        function validateLevelData(matrix) {
+            if (!matrix || !Array.isArray(matrix) || !matrix.length || !Array.isArray(matrix[0])) {
+                throw new Error('Invalid level matrix format');
+            }
+            
+            let hasFinishLine = false;
+            for (let row of matrix) {
+                for (let cell of row) {
+                    if (cell === 4) hasFinishLine = true;
+                    if (typeof cell !== 'number' || cell < 0 || cell > 4) {
+                        throw new Error('Invalid cell value in matrix');
+                    }
+                }
+            }
+            
+            if (!hasFinishLine) {
+                throw new Error('Level must have a finish line (type 4)');
+            }
+        }
+
+        /**
+         * Updates background color based on current position in level
+         * Uses negative numbers in top row of matrix for color codes
+         */
+        function updateBackgroundColor() {
+            let visualColumn = 0;
+            if (obstacles.length > 0) {
+                const firstObstacle = obstacles[0];
+                const obstacleLeft = parseInt(firstObstacle.element.style.left);
+                visualColumn = Math.floor((gameContainer.offsetWidth - obstacleLeft) / CONSTANTS.COLUMN_WIDTH);
+            }
+
+            if (visualColumn >= 0 && visualColumn < levelMatrix[0].length) {
+                const colors = {
+                    '-1': '#000000',    // Default black
+                    '-2': '#913291',    // Dark purple
+                    '-3': '#339033',    // Dark green
+                    '-4': '#963535',    // Dark red
+                    '-5': '#2a2a8d'     // Dark blue
+                };
+                
+                const colorCode = levelMatrix[0][visualColumn];
+                const nextColumn = Math.min(visualColumn + 1, levelMatrix[0].length - 1);
+                const nextColorCode = levelMatrix[0][nextColumn];
+                
+                const currentColor = colorCode in colors ? colors[colorCode] : colors['-1'];
+                const nextColor = nextColorCode in colors ? colors[nextColorCode] : colors['-1'];
+                
+                const gameContainer = document.getElementById('gameContainer');
+                gameContainer.style.setProperty('--from-color', currentColor);
+                gameContainer.style.setProperty('--to-color', nextColor);
+                gameContainer.style.animation = 'backgroundTransition 1s forwards';
+            }
+        }
+
+        /**
+         * Enhanced level data validation
+         * @throws {Error} If validation fails
+         */
+        function validateLevelData(matrix) {
+            if (!matrix || !Array.isArray(matrix) || !matrix.length || !Array.isArray(matrix[0])) {
+                throw new Error('Invalid level matrix format');
+            }
+
+            const width = matrix[0].length;
+            let hasFinishLine = false;
+            let hasValidColorCodes = false;
+
+            // Check matrix structure and content
+            for (let row = 0; row < matrix.length; row++) {
+                if (matrix[row].length !== width) {
+                    throw new Error('Inconsistent row lengths in matrix');
+                }
+
+                for (let col = 0; col < width; col++) {
+                    const cell = matrix[row][col];
+                    
+                    // Top row can contain negative numbers for colors
+                    if (row === 0 && cell < 0 && cell >= -5) {
+                        hasValidColorCodes = true;
+                        continue;
+                    }
+                    
+                    // Other rows must contain valid obstacle codes
+                    if (typeof cell !== 'number' || cell < 0 || cell > 4) {
+                        throw new Error(`Invalid cell value ${cell} at position [${row},${col}]`);
+                    }
+                    
+                    if (cell === 4) hasFinishLine = true;
+                }
+            }
+
+            if (!hasFinishLine) {
+                throw new Error('Level must have a finish line (type 4)');
+            }
+
+            if (!hasValidColorCodes) {
+                console.warn('No background color codes found in top row');
+            }
+        }
+
+        /**
+         * Enhanced touch controls setup
+         */
+        function initializeTouchControls() {
+            const touchThreshold = 20; // pixels
+            let touchStartY = 0;
+            let isSwiping = false;
+
+            document.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                touchStartY = e.touches[0].clientY;
+                isSwiping = false;
+            }, { passive: false });
+
+            document.addEventListener('touchmove', function(e) {
+                if (Math.abs(e.touches[0].clientY - touchStartY) > touchThreshold) {
+                    isSwiping = true;
+                }
+            }, { passive: false });
+
+            document.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                if (!isPaused && !isGameOver && !isLevelComplete && !isSwiping) {
+                    jump();
+                }
+            }, { passive: false });
+        }
+
+    </script>
+</body>
+</html>

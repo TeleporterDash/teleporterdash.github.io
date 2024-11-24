@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teleporter Dash Level Editor</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
+
+        body {
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            background: #1a1a1a;
+            font-family: 'Orbitron', sans-serif;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #editorContainer {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        #gridContainer {
+            flex: 1;
+            height: 400px;
+            background: #000;
+            overflow: auto;
+            border: 2px solid #333;
+            position: relative;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(var(--grid-width, 100), 40px);
+            grid-template-rows: repeat(var(--grid-height, 5), 60px);
+            gap: 2px;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .cell {
+            width: 40px;
+            height: 60px;
+            border: 1px solid #333;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .cell:hover {
+            border-color: #0F9D58;
+        }
+
+        .cell.empty {
+            background: transparent;
+        }
+
+        .cell.platform {
+            background: #4287f5;
+        }
+
+        .cell.spike {
+            background: #ff0000;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+
+        .cell.teleporter {
+            background: linear-gradient(to right, #ff00ff, #8c00ff);
+            animation: glow 1s infinite alternate;
+        }
+
+        .cell.finish {
+            background: #00ff00;
+        }
+
+        .cell.color-row {
+            background: transparent;
+            border: 1px solid #666;
+            opacity: 1;
+        }
+
+        .cell.color-row:hover {
+            border-color: #0F9D58;
+            opacity: 0.8;
+        }
+
+        #editorControls {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group input,
+        .control-group select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #333;
+            background: #222;
+            color: white;
+        }
+
+        .tool-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .tool {
+            padding: 10px;
+            background: #4285F4;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .tool.active {
+            background: #0F9D58;
+        }
+
+        .action-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .action-group button {
+            padding: 10px 20px;
+            background: #0F9D58;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .action-group button:hover {
+            background: #0B8043;
+        }
+
+        #previewMusic {
+            padding: 5px 10px;
+            background: #4285F4;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 5px #ff00ff; }
+            to { box-shadow: 0 0 20px #ff00ff; }
+        }
+
+        #exportArea {
+            width: 100%;
+            height: 100px;
+            margin-top: 20px;
+            background: #222;
+            color: white;
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: monospace;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #0F9D58;
+            text-shadow: 0 0 10px #0F9D58;
+        }
+
+        .tool[data-type="c"] {
+            background: linear-gradient(45deg, #ff0000, #00ff00, #0000ff);
+        }
+
+        #gameContainer {
+            --from-color: #000000;
+            --to-color: #000000;
+            background-color: var(--from-color);
+            will-change: background-color;
+        }
+
+        @keyframes backgroundTransition {
+            0% { 
+                background-color: var(--from-color);
+            }
+            100% { 
+                background-color: var(--to-color);
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1 class="header">Teleporter Dash Level Editor</h1>
+    <div id="editorContainer">
+        <div id="gridContainer">
+            <div id="grid"></div>
+        </div>
+        <div id="editorControls">
+            <div class="control-group">
+                <label for="levelName">Level Name:</label>
+                <input type="text" id="levelName" placeholder="Untitled Level">
+            </div>
+            
+            <div class="control-group">
+                <label for="musicSelect">Background Music:</label>
+                <select id="musicSelect">
+                    <option value="level1.mp3">Stereo Madness</option>
+                    <option value="level2.mp3">Back on Track</option>
+                    <option value="level3.mp3">Polargeist</option>
+                    <option value="level4.mp3">Dry Out</option>
+                    <option value="level5.mp3">Base After Base</option>
+                    <option value="custom">Custom Music...</option>
+                </select>
+                <input type="file" id="customMusicInput" accept="audio/*" style="display: none;">
+    <button id="previewMusic">Preview Music</button>
+            </div>
+
+            <div class="control-group">
+                <label>Grid Size:</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div>
+                        <label for="gridWidth">Width:</label>
+                        <input type="number" id="gridWidth" value="100" style="width: 70px;">
+                    </div>
+                    <div>
+                        <label for="gridHeight">Height:</label>
+                        <input type="number" id="gridHeight" value="5" style="width: 70px;">
+                    </div>
+                    <button id="updateGridSize" style="padding: 5px 10px; background: #4285F4; border: none; border-radius: 5px; color: white; cursor: pointer;">
+                        Update Grid
+                    </button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Tools:</label>
+                <div class="tool-group">
+                    <button class="tool active" data-type="0">Empty</button>
+                    <button class="tool" data-type="1">Platform</button>
+                    <button class="tool" data-type="2">Spike</button>
+                    <button class="tool" data-type="3">Teleporter</button>
+                    <button class="tool" data-type="4">Finish</button>
+                    <button class="tool" data-type="c">Color</button>
+                </div>
+            </div>
+
+            <div class="control-group" id="colorPickerGroup" style="display: none;">
+                <label>Color:</label>
+                <select id="colorPicker">
+                    <option value="1">Black</option>
+                    <option value="2">Purple</option>
+                    <option value="3">Green</option>
+                    <option value="4">Red</option>
+                    <option value="5">Blue</option>
+                </select>
+            </div>
+
+            <div class="action-group">
+                <button id="exportBtn">Export Level</button>
+                <button id="testBtn">Test Level</button>
+                <button id="clearBtn">Clear Grid</button>
+            </div>
+
+            <textarea id="exportArea" readonly placeholder="Exported level data will appear here..."></textarea>
+        </div>
+    </div>
+    <audio id="musicPreview" src="../Sound/Level Soundtracks/"></audio>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script>
+        const grid = document.getElementById('grid');
+        const tools = document.querySelectorAll('.tool');
+        const exportBtn = document.getElementById('exportBtn');
+        const testBtn = document.getElementById('testBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const exportArea = document.getElementById('exportArea');
+        const musicSelect = document.getElementById('musicSelect');
+        const musicPreview = document.getElementById('musicPreview');
+        const previewMusicBtn = document.getElementById('previewMusic');
+        const levelNameInput = document.getElementById('levelName');
+        const bgColorSelect = document.getElementById('bgColor');
+
+        let currentTool = '0';
+        let isMouseDown = false;
+
+        // Add these variables at the top with other declarations
+        let customMusicFile = null;
+        const customMusicInput = document.getElementById('customMusicInput');
+
+        // Add this after the script tag opens, before other variables
+        const COLOR_MAP = {
+            0: '#000000',     // Default black
+            '-1': '#000000',  // Black
+            '-2': '#913291',  // Dark purple
+            '-3': '#339033',  // Dark green
+            '-4': '#963535',  // Dark red
+            '-5': '#2a2a8d'   // Dark blue
+        };
+        
+        // Update music selection handler
+        musicSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customMusicInput.click();
+            }
+        });
+
+        // Add these variables at the top with other declarations
+        const gridWidthInput = document.getElementById('gridWidth');
+        const gridHeightInput = document.getElementById('gridHeight');
+        const updateGridSizeBtn = document.getElementById('updateGridSize');
+        let GRID_WIDTH = 100;
+        let GRID_HEIGHT = 5;
+
+        // Initialize levelMatrix with correct dimensions
+        let levelMatrix = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(0));
+
+        // Add this function to update the grid size
+        function updateGridSize() {
+            const newWidth = parseInt(gridWidthInput.value) || GRID_WIDTH;
+            const newHeight = parseInt(gridHeightInput.value) || GRID_HEIGHT;
+            
+            // Create new matrix with proper dimensions, initialized with zeros
+            const newMatrix = Array(newHeight).fill().map(() => Array(newWidth).fill(0));
+            
+            // Copy over existing values where possible
+            for (let row = 0; row < Math.min(GRID_HEIGHT, newHeight); row++) {
+                for (let col = 0; col < Math.min(GRID_WIDTH, newWidth); col++) {
+                    if (levelMatrix[row] && typeof levelMatrix[row][col] === 'number') {
+                        newMatrix[row][col] = levelMatrix[row][col];
+                    }
+                }
+            }
+            
+            GRID_WIDTH = newWidth;
+            GRID_HEIGHT = newHeight;
+            levelMatrix = newMatrix;
+            
+            createGrid();
+        }
+
+        // Add event listener for the update button
+        updateGridSizeBtn.addEventListener('click', updateGridSize);
+
+        // Update the createGrid function to handle dimensions correctly
+        function createGrid() {
+            grid.innerHTML = '';
+            
+            // Set correct dimensions (no need to add 1 anymore)
+            grid.style.setProperty('--grid-width', GRID_WIDTH);
+            grid.style.setProperty('--grid-height', GRID_HEIGHT);
+            
+            // Create the actual grid cells
+            for (let row = 0; row < GRID_HEIGHT; row++) {
+                for (let col = 0; col < GRID_WIDTH; col++) {
+                    const cell = document.createElement('div');
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    // Set initial cell state based on matrix
+                    const value = levelMatrix[row][col];
+                    
+                    if (row === 0) {
+                        cell.className = 'cell color-row';
+                        const colorValue = value <= 0 ? value : 0; // Ensure color values are negative or 0
+                        cell.style.backgroundColor = COLOR_MAP[colorValue] || COLOR_MAP[0];
+                    } else {
+                        cell.className = 'cell empty';
+                        if (value > 0) {
+                            switch(value) {
+                                case 1: cell.classList.add('platform'); break;
+                                case 2: cell.classList.add('spike'); break;
+                                case 3: cell.classList.add('teleporter'); break;
+                                case 4: cell.classList.add('finish'); break;
+                            }
+                        }
+                    }
+                    
+                    cell.addEventListener('mousedown', (e) => {
+                        isMouseDown = true;
+                        handleCellClick(e);
+                    });
+                    
+                    cell.addEventListener('mouseover', (e) => {
+                        if (isMouseDown) handleCellClick(e);
+                    });
+                    
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        // Stop drawing when mouse is released
+        document.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+
+        // Handle tool selection
+        tools.forEach(tool => {
+            tool.addEventListener('click', () => {
+                tools.forEach(t => t.classList.remove('active'));
+                tool.classList.add('active');
+                currentTool = tool.dataset.type;
+                
+                // Show/hide color picker based on tool selection
+                const colorPickerGroup = document.getElementById('colorPickerGroup');
+                colorPickerGroup.style.display = currentTool === 'c' ? 'block' : 'none';
+            });
+        });
+
+        // Add near the top with other variables (around line 285)
+        let selectedColor = 0;  // Default color value
+
+        // Add this function before handleColorSelection
+        function updateSelectedColorIndicator() {
+            const colorCell = document.querySelector('.cell.color-row');
+            if (colorCell) {
+                colorCell.style.backgroundColor = COLOR_MAP[selectedColor] || COLOR_MAP[0];
+            }
+        }
+
+        // Update the handleCellClick function to ensure proper color application
+        function handleCellClick(e) {
+            const cell = e.target;
+            if (!cell.dataset.row || !cell.dataset.col) return;
+            
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            
+            if (currentTool === 'c' && row === 0) {
+                // Force color to be applied with full opacity
+                levelMatrix[row][col] = selectedColor;
+                cell.style.backgroundColor = COLOR_MAP[selectedColor];
+                cell.style.opacity = '1';
+            } else if (row === 0) {
+                return;
+            } else {
+                levelMatrix[row][col] = parseInt(currentTool);
+            }
+            
+            updateGridVisuals();
+        }
+
+        // Update grid visuals
+        function updateGridVisuals() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                if (!cell.dataset.row || !cell.dataset.col) return;
+                
+                const row = parseInt(cell.dataset.row);
+                const col = parseInt(cell.dataset.col);
+                
+                if (row === 0) {
+                    // Handle color row
+                    const colorValue = levelMatrix[0][col];
+                    cell.className = 'cell color-row';
+                    cell.style.backgroundColor = COLOR_MAP[colorValue] || COLOR_MAP[0];
+                } else {
+                    // Handle game cells
+                    const value = levelMatrix[row][col];
+                    cell.className = 'cell';
+                    switch(value) {
+                        case 0: cell.classList.add('empty'); break;
+                        case 1: cell.classList.add('platform'); break;
+                        case 2: cell.classList.add('spike'); break;
+                        case 3: cell.classList.add('teleporter'); break;
+                        case 4: cell.classList.add('finish'); break;
+                    }
+                }
+            });
+        }
+
+        // Add this function to get the full music path
+        function getMusicPath(musicValue) {
+            if (!musicValue) return '../Sound/Level Soundtracks/level1.mp3';
+            
+            if (musicValue === 'custom' && customMusicFile) {
+                return URL.createObjectURL(customMusicFile);
+            }
+            
+            // If it's not a full path, add the directory
+            if (!musicValue.includes('/')) {
+                return '../Sound/Level Soundtracks/' + musicValue;
+            }
+            
+            return musicValue;
+        }
+
+        // Update the preview music functionality
+        previewMusicBtn.addEventListener('click', () => {
+            if (musicPreview.paused) {
+                const musicPath = getMusicPath(musicSelect.value);
+                musicPreview.src = musicPath;
+                
+                musicPreview.play().catch(error => {
+                    console.error('Failed to play music:', error);
+                    alert('Failed to play music preview. Please check if the file exists.');
+                    previewMusicBtn.textContent = 'Preview Music';
+                });
+                
+                previewMusicBtn.textContent = 'Stop Preview';
+            } else {
+                musicPreview.pause();
+                musicPreview.currentTime = 0;
+                previewMusicBtn.textContent = 'Preview Music';
+            }
+        });
+
+        // Add near the top with other variables
+        const LEVELS_REGISTRY_KEY = 'teleporterDash_levels';
+
+        // Add this helper function
+        function getLevelsRegistry() {
+            return JSON.parse(localStorage.getItem(LEVELS_REGISTRY_KEY) || '[]');
+        }
+
+        // Update the export button handler to include proper color transition settings
+        exportBtn.addEventListener('click', () => {
+            const levelName = levelNameInput.value || 'Untitled Level';
+            let musicFile = musicSelect.value;
+            const levelId = getNextLevelId();
+            const zip = new JSZip();
+            
+            // Create level file content with registry data included
+            const jsContent = `// Level ${levelId}: ${levelName}
+window.levelData = {
+    id: ${levelId},
+    title: "${levelName}",
+    matrix: ${JSON.stringify(levelMatrix, null, 4)},
+    music: "${musicFile}",
+    colorTransitionDuration: 0.5,  // Reduced from 3 to 0.5 for smoother transitions
+    colorTransitionDelay: 0.1      // Add small delay between transitions
+};
+
+// Registry entry for this level
+window.levelRegistry = window.levelRegistry || [];
+window.levelRegistry.push({
+    id: ${levelId},
+    title: "${levelName}",
+    difficulty: 'custom'
+});`;
+
+            // Add files to zip
+            zip.file(`Levels/level${levelId}.js`, jsContent);
+            
+            if (musicSelect.value === 'custom' && customMusicFile) {
+                musicFile = 'custom_' + customMusicFile.name;
+                zip.file('Sound/Level Soundtracks/' + musicFile, customMusicFile);
+            }
+
+            // Create README content
+            const readmeContent = [
+                `Level: ${levelName}`,
+                `Level ID: ${levelId}`,
+                `Music File Required: ${musicFile}`,
+                ``,
+                `Setup Instructions:`,
+                `1. Extract all files from this zip`,
+                `2. Copy "level${levelId}.js" to the Levels directory`,
+                musicSelect.value === 'custom' ? `3. Copy the music file to Sound/Level Soundtracks directory` : '',
+                ``,
+                `The level will automatically appear in the menu when you restart the game.`
+            ].filter(line => line !== '').join('\n');
+
+            zip.file('README.txt', readmeContent);
+
+            // Generate and download the zip
+            zip.generateAsync({type: 'blob'})
+                .then(function(content) {
+                    const url = URL.createObjectURL(content);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${levelName}_level${levelId}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                });
+        });
+
+        // Add this for handling custom music file selection
+        customMusicInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                customMusicFile = e.target.files[0];
+                // Update music select to show custom file name
+                const option = document.createElement('option');
+                option.value = 'custom';
+                option.text = 'Custom: ' + customMusicFile.name;
+                option.selected = true;
+                
+                // Remove any existing custom option
+                Array.from(musicSelect.options).forEach(opt => {
+                    if (opt.value === 'custom') musicSelect.removeChild(opt);
+                });
+                
+                musicSelect.add(option);
+                
+                // Reset preview button
+                previewMusicBtn.textContent = 'Preview Music';
+                musicPreview.pause();
+                musicPreview.currentTime = 0;
+            }
+        });
+
+        // Test level functionality
+        testBtn.addEventListener('click', () => {
+            testLevel();
+        });
+
+        // Clear grid
+        clearBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear the grid?')) {
+                levelMatrix = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(0));
+                updateGridVisuals();
+            }
+        });
+
+        // Initialize the editor
+        createGrid();
+
+        // Prevent default drag behavior
+        grid.addEventListener('dragstart', e => e.preventDefault());
+
+        // Add near the top with other variables
+        let nextLevelId = parseInt(localStorage.getItem('nextLevelId') || '1');
+
+        // Add this function
+        function getNextLevelId() {
+            const id = nextLevelId++;
+            localStorage.setItem('nextLevelId', nextLevelId);
+            return id;
+        }
+
+        // Add this function to sanitize the matrix before testing
+        function sanitizeMatrix(matrix) {
+            return matrix.map(row => 
+                row.map(cell => 
+                    cell === null || cell === undefined ? 0 : cell
+                )
+            );
+        }
+
+        // Update the test level function to include the new transition settings
+        function testLevel() {
+            const testData = {
+                matrix: sanitizeMatrix(JSON.parse(JSON.stringify(levelMatrix))),
+                name: levelNameInput.value || 'Test Level',
+                music: getMusicPath(musicSelect.value),
+                id: 'test',
+                colorTransitionDuration: 2.0,  // Increased for stability
+                colorTransitionDelay: 0.2      // Reduced to prevent skipping
+            };
+            
+            // Validate color codes in the matrix before testing
+            const topRow = testData.matrix[0];
+            for (let i = 0; i < topRow.length; i++) {
+                if (topRow[i] > 0) topRow[i] = -1; // Convert any positive numbers to default black
+                if (topRow[i] < -5) topRow[i] = -1; // Convert any invalid negative numbers to default black
+            }
+            
+            const encodedData = encodeURIComponent(JSON.stringify(testData));
+            const testUrl = `../Levels/gameloader.html?test=true&data=${encodedData}`;
+            
+            const gameWindow = window.open(testUrl, '_blank');
+            if (!gameWindow) {
+                alert('Popup blocked! Please allow popups to test levels.');
+            }
+        }
+
+        // Clean up object URLs when leaving the page
+        window.addEventListener('beforeunload', () => {
+            if (musicPreview.src.startsWith('blob:')) {
+                URL.revokeObjectURL(musicPreview.src);
+            }
+        });
+
+        // Update color selection to use negative numbers
+        function handleColorSelection(colorNum) {
+            selectedColor = -colorNum;  // Remove the +1 offset
+            updateSelectedColorIndicator();
+        }
+
+        // Update the color picker options to match the COLOR_MAP
+        const colorPicker = document.getElementById('colorPicker');
+        colorPicker.innerHTML = `
+            <option value="1">Black</option>
+            <option value="2">Purple</option>
+            <option value="3">Green</option>
+            <option value="4">Red</option>
+            <option value="5">Blue</option>
+        `;
+
+        // Update the color picker change handler
+        colorPicker.addEventListener('change', function() {
+            handleColorSelection(parseInt(this.value));
+        });
+    </script>
+</body>
+</html> 
