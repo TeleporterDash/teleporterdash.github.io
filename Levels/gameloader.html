@@ -352,6 +352,12 @@
     </div>
 
     <script>
+        // At the top of your script, after variable declarations
+        console.log('[Line 10] Script loaded');
+
+        // Add these debug logs right after
+        console.log('[Line 13] Starting variable declarations');
+
         // Global level data variables
         let levelMatrix = [0];      // Stores the level layout
         let levelTitle;            // Stores the level name
@@ -363,8 +369,11 @@
          * Returns a Promise that resolves when level data is loaded
          */
         async function initializeLevelData() {
+            console.log('[Line 20] initializeLevelData called');
             return new Promise((resolve, reject) => {
+                console.log('[Line 22] Inside Promise');
                 if (window.location.search.includes('test=true')) {
+                    console.log('[Line 24] Loading test level');
                     // Load test level data from URL parameters (used by level editor)
                     const urlParams = new URLSearchParams(window.location.search);
                     const testData = JSON.parse(decodeURIComponent(urlParams.get('data')));
@@ -375,15 +384,21 @@
                     document.title = levelTitle;
                     resolve();
                 } else {
-                    // Load regular level data from level files
+                    console.log('[Line 30] Loading regular level');
                     const urlParams = new URLSearchParams(window.location.search);
                     const levelNumber = urlParams.get('level') || '1';  // Default to level 1 if no level specified
+                    
+                    console.log('[Line 33] Loading level:', levelNumber);
                     
                     // Dynamically load the level script file
                     const levelScript = document.createElement('script');
                     levelScript.src = `level${levelNumber}.js`;
+                    console.log('[Line 37] Created script element for:', levelScript.src);
+                    
                     levelScript.onload = () => {
+                        console.log('[Line 40] Level script loaded');
                         if (window.levelData) {
+                            console.log('[Line 42] Level data found:', window.levelData);
                             // Transfer level data from loaded script to global variables
                             levelMatrix = window.levelData.matrix;
                             levelTitle = window.levelData.title;
@@ -415,6 +430,9 @@
             GROUND_HEIGHT: 50,      // Height of the ground from bottom of container
         };
 
+        // Add these debug logs right after
+        console.log('[Line 15] CONSTANTS defined:', CONSTANTS);
+
         // Game state variables
         let isJumping = false;              // Whether player is currently jumping
         let gravity = CONSTANTS.GRAVITY;     // Current gravity value (can be modified by power-ups)
@@ -430,6 +448,9 @@
         let doubleJumpAvailable = true;    // Whether double jump is available
         let particles = [];                // Array of active particle effects
         let isOnPlatform = false;         // Whether player is standing on a platform
+
+        // Add these debug logs right after
+        console.log('[Line 17] Game state variables initialized');
 
         // Progress tracking variables
         const progressText = document.getElementById('progressText');
@@ -450,27 +471,45 @@
         let finishLinePosition = 0;
 
         // Audio elements for game sounds
-        let backgroundMusic;   // Background music audio element
-        let jumpSound;        // Sound effect for jumping
-        let deathSound;       // Sound effect for player death
-        let completionSound;  // Sound effect for level completion
-        let isMuted = false;  // Global mute state
+        let backgroundMusic = new Audio();
+        let jumpSound = new Audio();
+        let deathSound = new Audio();
+        let completionSound = new Audio();
+        let isMuted = false;
+
+        // Add these debug logs right after
+        console.log('[Line 21] Audio variables initialized');
 
         // Game mode flags
         let isPracticeMode = false;  // Practice mode disables death
         let isLevelStarted = false;  // Whether the level has begun
 
+        // Add these debug logs right after
+        console.log('[Line 23] Game mode flags initialized');
+
         // Auto-restart settings
         let autoRestartEnabled = false;  // Whether to automatically restart on death
         let isRestarting = false;       // Whether the game is currently restarting
+
+        // Add these debug logs right after
+        console.log('[Line 25] Auto-restart settings initialized');
 
         // Pause state
         let isPaused = false;
         const pauseMenu = document.getElementById('pauseMenu');
 
+        // Add these debug logs right after
+        console.log('[Line 27] Pause state initialized');
+
         // Check if level complete
         const levelCompleteElement = document.getElementById('levelComplete');
         const gameOverElement = document.getElementById('gameOver');
+
+        // Add these debug logs right after
+        console.log('[Line 29] Level complete elements initialized:', {
+            levelCompleteElement: !!levelCompleteElement,
+            gameOverElement: !!gameOverElement
+        });
 
         // Game state object for managing complex state
         const gameState = {
@@ -480,6 +519,9 @@
             currentColumn: 0,
             // etc...
         };
+
+        // Add these debug logs right after
+        console.log('[Line 31] Game state object initialized');
 
         // Settings manager for persistent game settings
         const SettingsManager = {
@@ -496,46 +538,61 @@
             }
         };
 
+        // Add these debug logs right after
+        console.log('[Line 33] Settings manager initialized');
+
         /**
          * Sets up audio elements with the selected music and sound effects
          * Includes error handling for failed audio loading
          */
         function setupAudio() {
+            console.log('[Line 80] Setting up audio');
             try {
-                if (!levelMusic) {
-                    console.error('No music specified for level');
-                    return;
+                // Initialize audio elements
+                backgroundMusic = new Audio();
+                jumpSound = new Audio('sounds/jump.mp3');
+                deathSound = new Audio('sounds/death.mp3');
+                completionSound = new Audio('sounds/complete.mp3');
+
+                // Set background music based on level settings
+                if (levelMusic) {
+                    backgroundMusic.src = levelMusic;
+                } else {
+                    backgroundMusic.src = 'sounds/background.mp3';  // default music
                 }
-                
-                backgroundMusic = new Audio(levelMusic);
-                backgroundMusic.onerror = (e) => {
-                    console.error('Failed to load background music:', e);
-                    isMuted = true; // Fallback to muted if audio fails
-                };
+
+                // Set audio properties
                 backgroundMusic.loop = true;
-                backgroundMusic.volume = 0.9;
-                
-                // Load sound effects with error handling
-                const loadSoundEffect = (path) => {
-                    const audio = new Audio(path);
-                    audio.onerror = (e) => console.error(`Failed to load sound effect ${path}:`, e);
-                    return audio;
-                };
-                
-                jumpSound = loadSoundEffect('../Sound/Basic Soundeffects/jumptd.mp3');
-                deathSound = loadSoundEffect('../Sound/Basic Soundeffects/deathtd.ogg');
-                completionSound = loadSoundEffect('../Sound/Basic Soundeffects/lvlcompletetd.mp3');
+                backgroundMusic.volume = 0.6;
+                jumpSound.volume = 0.2;
+                deathSound.volume = 0.7;
+                completionSound.volume = 0.7;
+
+                // Set mute state
+                backgroundMusic.muted = isMuted;
+                jumpSound.muted = isMuted;
+                deathSound.muted = isMuted;
+                completionSound.muted = isMuted;
+
+                console.log('[Line 81] Audio setup complete');
             } catch (error) {
-                console.error("Audio setup failed:", error);
-                isMuted = true; // Fallback to muted
+                console.error('[Line 82] Audio setup failed:', error);
             }
         }
+
+        // Add these debug logs right after
+        console.log('[Line 35] About to define setupAudio function');
+
+        // After setupAudio function
+        console.log('[Line 37] setupAudio function defined');
 
         /**
          * Toggles the mute state of all game audio
          * Affects background music and all sound effects
          */
         function toggleMute() {
+            if (!backgroundMusic) return;  // Guard clause if audio isn't initialized
+            
             isMuted = !isMuted;
             backgroundMusic.muted = isMuted;
             jumpSound.muted = isMuted;
@@ -543,17 +600,64 @@
             completionSound.muted = isMuted;
         }
 
-        // Add this after other event listeners
-        document.getElementById('muteButton').addEventListener('click', function() {
-            toggleMute();
-            this.textContent = isMuted ? '🔈' : '🔊';
+        // Add these debug logs right after
+        console.log('[Line 39] About to define toggleMute function');
+
+        // After toggleMute function
+        console.log('[Line 41] toggleMute function defined');
+
+        // Before mute button event listener
+        console.log('[Line 43] About to add mute button listener');
+
+        // Add this debug log
+        console.log('[Line 44] Mute button element:', document.getElementById('muteButton'));
+
+        // Add mute button event listener with error handling
+        try {
+            const muteButton = document.getElementById('muteButton');
+            if (muteButton) {
+                muteButton.addEventListener('click', function() {
+                    toggleMute();
+                    this.textContent = isMuted ? '🔈' : '🔊';
+                });
+                console.log('[Line 45] Mute button listener added successfully');
+            } else {
+                console.error('[Line 46] Mute button not found in DOM');
+            }
+        } catch (error) {
+            console.error('[Line 47] Error adding mute button listener:', error);
+        }
+
+        // After mute button event listener
+        console.log('[Line 48] Continuing after mute button setup');
+
+        // Add more granular debugging
+        console.log('[Line 49] About to initialize particle system');
+
+        // Check game state
+        console.log('[Line 50] Current game state:', { 
+            isLevelStarted, 
+            isGameOver, 
+            isPaused 
         });
+
+        // Add these new debug logs
+        console.log('[Line 51] Checking game elements:', {
+            gameContainer: !!document.getElementById('gameContainer'),
+            player: !!document.getElementById('player')
+        });
+
+        // Initialize particles array if it doesn't exist
+        if (!window.particles) {
+            particles = [];
+        }
 
         /**
          * Creates particle effects with specified color
          * @param {string} color - Color of particles (e.g., '#ff0000' for red)
          */
         function createParticles(color) {
+            console.log('[Line 55] Creating particles with color:', color);
             for (let i = 0; i < 10; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'particle';
@@ -584,11 +688,30 @@
             }
         }
 
+        // After createParticles function definition
+        console.log('[Line 54] createParticles function defined');
+
+        // Check game state
+        console.log('[Line 55] Current game state:', { 
+            isLevelStarted, 
+            isGameOver, 
+            isPaused 
+        });
+        // Add these new debug logs
+        console.log('[Line 56] About to check collision functions');
+
+        // Check if required elements exist
+        console.log('[Line 57] Required elements:', {
+            player: !!document.getElementById('player'),
+            obstacles: Array.isArray(obstacles),
+            gameContainer: !!document.getElementById('gameContainer')
+        });
         /**
          * Creates an obstacle based on the type specified in the level matrix
          * @param {number} type - The type of obstacle (0: empty, 1: platform, 2: spike, 3: teleporter, 4: finish)
          * @param {number} row - The row position in the level matrix
          */
+        console.log('[Line 60] About to define createObstacleFromMatrix');
         function createObstacleFromMatrix(type, row) {
             // Handle empty blocks (type 0)
             if (type === 0) {
@@ -648,11 +771,13 @@
             document.getElementById('cameraContainer').appendChild(obstacle);
             obstacles.push({ element: obstacle, type: obstacle.type });
         }
+        console.log('[Line 65] createObstacleFromMatrix defined');
 
         /**
          * Handles level completion state and UI
          * Called when player reaches the finish line
          */
+        console.log('[Line 70] About to define levelComplete');
         function levelComplete() {
             isLevelComplete = true;
             if (levelCompleteElement) {  // Add null check
@@ -698,6 +823,7 @@
             cleanupParticles();
             cancelAnimationFrame(animationFrameId);
         }
+        console.log('[Line 75] levelComplete defined');
 
         // Add camera-related variables
         let cameraOffsetY = 0;
@@ -708,19 +834,18 @@
          * Main game loop that updates all game elements
          * Called every animation frame when game is running
          */
+        console.log('[Line 80] About to define updateGame');
         function updateGame() {
-            // Cancel any existing animation frame before starting new one
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-            }
-
+            console.log('Update game called');
             // Don't update if game isn't in active state
             if (!isLevelStarted || isGameOver || isLevelComplete) {
+                console.log('Game not in active state', { isLevelStarted, isGameOver, isLevelComplete });
                 return;
             }
             
             if (isPaused) {
-                animationFrameId = requestAnimationFrame(updateGame);
+                console.log('Game paused');
+                requestAnimationFrame(updateGame);
                 return;
             }
             
@@ -830,7 +955,7 @@
 
             // Continue game loop if game is still active
             if (!isGameOver && !isLevelComplete) {
-                animationFrameId = requestAnimationFrame(updateGame);
+                requestAnimationFrame(updateGame);
             }
 
             // Update camera position to follow player
@@ -856,6 +981,7 @@
             const indicatorPosition = (invertedPosition / maxHeight) * heightIndicator.offsetHeight;
             playerIndicator.style.top = `${Math.min(heightIndicator.offsetHeight, Math.max(0, indicatorPosition))}px`;
         }
+        console.log('[Line 85] updateGame defined');
 
         /**
          * Handles collision detection between player and obstacles
@@ -863,6 +989,7 @@
          * @param {HTMLElement} obstacle - The obstacle element to check collision with
          * @returns {boolean} - True if collision detected, false otherwise
          */
+        console.log('[Line 90] About to define checkCollision');
         function checkCollision(player, obstacle) {
             if (obstacle.classList.contains('empty-block')) return false;
             
@@ -882,11 +1009,13 @@
                     playerBottom + playerSize - tolerance < obstacleBottom || 
                     playerBottom + tolerance > obstacleBottom + obstacleSize);
         }
+        console.log('[Line 95] checkCollision defined');
 
         /**
          * Handles specific collision logic for platforms
          * Includes landing detection and side collision
          */
+        console.log('[Line 100] About to define handlePlatformCollision');
         function handlePlatformCollision(playerRect, platform) {
             // Get raw positions without camera influence
             const playerBottom = parseInt(player.style.bottom);
@@ -925,11 +1054,13 @@
                 }
             }
         }
+        console.log('[Line 105] handlePlatformCollision defined');
 
         /**
          * Handles game over state and UI
          * Called when player hits spikes or collides with obstacles
          */
+        console.log('[Line 110] About to define gameOver');
         function gameOver() {
             if (!isPracticeMode) {
                 isGameOver = true;
@@ -962,11 +1093,13 @@
                 rotation = 0;
             }
         }
+        console.log('[Line 115] gameOver defined');
 
         /**
          * Restarts the game, resetting all necessary variables and states
          * Called after game over or when manually restarting
          */
+        console.log('[Line 120] About to define restartGame');
         function restartGame() {
             // Cancel any pending animation frames
             if (animationFrameId) {
@@ -1039,22 +1172,29 @@
             // Start game loop
             updateGame();
         }
+        console.log('[Line 125] restartGame defined');
 
         // Event listeners for player input
+        console.log('[Line 130] About to add event listeners');
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                 jump();
                 e.preventDefault(); // Prevent page scrolling
             }
         });
+        console.log('[Line 135] Keydown listener added');
 
         document.addEventListener('touchstart', jump);
+        console.log('[Line 140] Touch listener added');
+
         restartBtn.addEventListener('click', restartGame);
+        console.log('[Line 145] Restart button listener added');
 
         /**
          * Handles player jumping mechanics
          * Includes double jump and jump buffering
          */
+        console.log('[Line 150] About to define jump');
         function jump() {
             const currentTime = Date.now();
             
@@ -1079,12 +1219,14 @@
                 }
             }
         }
+        console.log('[Line 155] jump defined');
 
         /**
          * Updates the progress bar and level completion percentage
          * Called from updateGame when new obstacles are created
          * Throttled to avoid performance issues
          */
+        console.log('[Line 160] About to define updateProgress');
         function updateProgress() {
             // Skip updates if game is in an end state
             if (isGameOver || isLevelComplete) return;
@@ -1122,6 +1264,7 @@
             
             lastProgressUpdate = currentTime;
         }
+        console.log('[Line 165] updateProgress defined');
 
         /**
          * Calculates the total number of blocks in the level
@@ -1151,7 +1294,7 @@
         // Event listener for mute button
         document.getElementById('muteButton').addEventListener('click', function() {
             toggleMute();
-            this.textContent = isMuted ? '🔈' : '';  // Update icon based on mute state
+            this.textContent = isMuted ? '🔈' : '🔊';  // Update icon based on mute state
         });
 
         /**
@@ -1248,69 +1391,8 @@
             if (savedAutoRestart !== null) {
                 autoRestartEnabled = savedAutoRestart === 'true';
                 autoRestartCheckbox.checked = autoRestartEnabled;
-            }
-
-            /**
-             * Handles level start sequence
-             * Shows loading animation and initializes game
-             */
-            startLevelBtn.addEventListener('click', async function() {
-                const loadingAnimation = document.getElementById('loadingAnimation');
-                const settingsMenu = document.getElementById('settingsMenu');
-                
-                try {
-                    // Visual feedback for loading
-                    loadingAnimation.style.display = 'block';
-                    startLevelBtn.style.display = 'none';
-
-                    // Initialize level data
-                    await initializeLevelData();
-                    
-                    // Reset game state
-                    isGameOver = false;
-                    isLevelComplete = false;
-                    isPaused = false;
-                    currentColumn = 0;
-                    playerVelocity = 0;
-                    rotation = 0;
-                    
-                    // Clear any existing animation frame
-                    if (animationFrameId) {
-                        cancelAnimationFrame(animationFrameId);
-                        animationFrameId = null;
-                    }
-
-                    // Hide settings menu and start game
-                    settingsMenu.style.display = 'none';
-                    isLevelStarted = true;
-                    
-                    // Start background music if not muted
-                    if (!isMuted && backgroundMusic) {
-                        try {
-                            await backgroundMusic.play();
-                        } catch (error) {
-                            console.log("Audio autoplay prevented:", error);
-                        }
-                    }
-
-                    // Start the game loop
-                    requestAnimationFrame(updateGame);
-                    
-                } catch (error) {
-                    console.error("Failed to start level:", error);
-                    loadingAnimation.style.display = 'none';
-                    startLevelBtn.style.display = 'block';
-                    alert('Failed to start level. Please try again.');
-                }
-            });
-
-            // Game speed control for practice mode
-            const gameSpeedSelect = document.getElementById('gameSpeed');
-            gameSpeedSelect.addEventListener('change', function() {
-                if (isPracticeMode) {
-                    gameSpeed = parseFloat(this.value) * 8; // Scale base speed
-                }
-            });
+            } 
+            
 
             /**
              * Toggles particle effects on/off
@@ -1587,7 +1669,87 @@
                 cancelAnimationFrame(animationFrameId);
             }
         });
+        console.log('[Line 170] All functions defined and listeners added');
 
+        // Add this after [Line 170] All functions defined and listeners added
+        console.log('[Line 171] About to add start button listener');
+
+        // Check if button exists
+        const startLevelBtn = document.getElementById('startLevelBtn');
+        console.log('[Line 174] Start button element:', startLevelBtn);
+
+        if (startLevelBtn) {
+            startLevelBtn.addEventListener('click', async function() {
+                console.log('[Line 177] Start button clicked');
+                const loadingAnimation = document.getElementById('loadingAnimation');
+                const settingsMenu = document.getElementById('settingsMenu');
+                
+                try {
+                    // Visual feedback for loading
+                    loadingAnimation.style.display = 'block';
+                    this.style.display = 'none';
+
+                    // Reset game state
+                    isGameOver = false;
+                    isLevelComplete = false;
+                    isPaused = false;
+                    currentColumn = 0;
+                    playerVelocity = 0;
+                    rotation = 0;
+                    
+                    // Clear any existing animation frame
+                    if (animationFrameId) {
+                        cancelAnimationFrame(animationFrameId);
+                        animationFrameId = null;
+                    }
+
+                    // Hide settings menu and start game
+                    settingsMenu.style.display = 'none';
+                    isLevelStarted = true;
+                    
+                    // Start background music if not muted
+                    if (!isMuted && backgroundMusic) {
+                        try {
+                            await backgroundMusic.play();
+                        } catch (error) {
+                            console.log("Audio autoplay prevented:", error);
+                        }
+                    }
+
+                    console.log('[Line 213] Starting game loop');
+                    // Start the game loop
+                    requestAnimationFrame(updateGame);
+                    
+                } catch (error) {
+                    console.error("Failed to start level:", error);
+                    loadingAnimation.style.display = 'none';
+                    this.style.display = 'block';
+                    alert('Failed to start level. Please try again.');
+                }
+            });
+            console.log('[Line 223] Start button listener added successfully');
+        } else {
+            console.error('[Line 225] Start button not found in DOM!');
+        }
+
+        console.log('[Line 228] Setup complete');
+
+        /**
+         * Cleans up all particle effects
+         * Called during game restart and level completion
+         */
+        function cleanupParticles() {
+            console.log('[Line 58] Cleaning up particles');
+            // Remove all particle elements from DOM
+            particles.forEach(particle => {
+                if (particle.element && particle.element.parentNode) {
+                    particle.element.remove();
+                }
+            });
+            // Clear particles array
+            particles = [];
+            console.log('[Line 59] Particles cleanup complete');
+        }
     </script>
 </body>
 </html>
