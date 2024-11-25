@@ -1628,29 +1628,7 @@
         // Toggle pause with pause button
         document.getElementById('pauseButton').addEventListener('click', togglePause);
 
-        // Define a function to smoothly transition between two colors
-        function interpolateColor(color1, color2, factor) {
-            console.log('[Line 41] Interpolating colors:', { color1, color2, factor });
-            
-            try {
-                // Convert hex to RGB
-                const c1 = color1.match(/[A-Za-z0-9]{2}/g).map(v => parseInt(v, 16));
-                const c2 = color2.match(/[A-Za-z0-9]{2}/g).map(v => parseInt(v, 16));
-                
-                // Interpolate each component
-                const result = c1.map((c, i) => {
-                    const val = Math.round(c * (1 - factor) + c2[i] * factor);
-                    return val.toString(16).padStart(2, '0');
-                });
-                
-                const finalColor = '#' + result.join('');
-                console.log('[Line 54] Interpolation result:', finalColor);
-                return finalColor;
-            } catch (error) {
-                console.error('[Line 57] Interpolation error:', error);
-                return color1; // Return first color on error
-            }
-        }
+
 
         // Color mapping from level editor
         const COLOR_MAP = {
@@ -1671,50 +1649,85 @@
         ];
         let colorIndex = 0;
         let transitionFactor = 0;
-        const transitionSpeed = 0.0029;
+        const totalTransitionTime = 10; // Total time for all transitions
 
+        // Calculate transition speed and duration
+        const numberOfTransitions = colorSteps.length - 1;
+        const transitionDuration = totalTransitionTime / numberOfTransitions;
+        const transitionSpeed = 1 / (transitionDuration * 60); // Assuming 60 frames per second
+
+        // Add these constants near the top of your script
+        const COLOR_TRANSITION = {
+            DURATION: 2,    // Duration of each color transition in seconds
+            SPEED: 0.0052    // Speed of transition (smaller = slower)
+        };
+
+        // Update the updateBackgroundColor function
         function updateBackgroundColor() {
-            // If we've reached the end of colors, stay on last color
-            if (colorIndex >= colorSteps.length - 1 && transitionFactor >= 1) {
-                console.log('[Line 4] Reached final color:', colorSteps[colorSteps.length - 1]);
-                return;
-            }
-
-            if (colorSteps.length < 2) {
-                return;
-            }
-
-            transitionFactor += transitionSpeed;
+            if (colorSteps.length < 2) return;
             
+            // Don't proceed if we've reached the end
+            if (colorIndex >= colorSteps.length - 1 && transitionFactor >= 1) {
+                return;
+            }
+
+            // Update transition factor
+            transitionFactor += COLOR_TRANSITION.SPEED;
+            
+            // When transition is complete, move to next color
             if (transitionFactor >= 1) {
                 transitionFactor = 0;
-                // Only increment if we're not at the last color
-                if (colorIndex < colorSteps.length - 1) {
-                    colorIndex++;
-                    console.log('[Line 19] Moving to next color:', {
-                        newColorIndex: colorIndex,
-                        color: colorSteps[colorIndex]
-                    });
-                }
+                colorIndex = Math.min(colorIndex + 1, colorSteps.length - 2);
+                
+                console.log('[Color Transition] Moving to next color:', {
+                    index: colorIndex,
+                    from: colorSteps[colorIndex],
+                    to: colorSteps[colorIndex + 1]
+                });
             }
-            
+
             const currentColor = colorSteps[colorIndex];
-            const nextColor = colorSteps[Math.min(colorIndex + 1, colorSteps.length - 1)];
-            
+            const nextColor = colorSteps[colorIndex + 1];
+
             try {
                 const newColor = interpolateColor(currentColor, nextColor, transitionFactor);
                 const gameContainer = document.getElementById('gameContainer');
                 if (gameContainer) {
                     gameContainer.style.backgroundColor = newColor;
-                    gameContainer.style.setProperty("--from-color", currentColor);
-                    gameContainer.style.setProperty("--to-color", nextColor);
+                    // Remove the CSS transition to make color changes immediate
+                    gameContainer.style.transition = 'none';
                 }
             } catch (error) {
-                console.error('[Line 37] Error updating background:', error);
+                console.error('[Color Transition] Error:', error);
             }
         }
 
- 
+        // Update the interpolateColor function for smoother transitions
+        function interpolateColor(color1, color2, factor) {
+            // Ensure factor is between 0 and 1
+            factor = Math.max(0, Math.min(1, factor));
+            
+            // Parse colors
+            const r1 = parseInt(color1.slice(1, 3), 16);
+            const g1 = parseInt(color1.slice(3, 5), 16);
+            const b1 = parseInt(color1.slice(5, 7), 16);
+            
+            const r2 = parseInt(color2.slice(1, 3), 16);
+            const g2 = parseInt(color2.slice(3, 5), 16);
+            const b2 = parseInt(color2.slice(5, 7), 16);
+            
+            // Interpolate using cubic easing for smoother transitions
+            const ease = factor * factor * (3 - 2 * factor);
+            
+            // Calculate new color values
+            const r = Math.round(r1 + (r2 - r1) * ease);
+            const g = Math.round(g1 + (g2 - g1) * ease);
+            const b = Math.round(b1 + (b2 - b1) * ease);
+            
+            // Convert back to hex
+            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+        }
+
         /**
          * Enhanced level data validation
          * @throws {Error} If validation fails
