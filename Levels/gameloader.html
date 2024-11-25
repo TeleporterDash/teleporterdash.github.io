@@ -276,7 +276,7 @@
         <div id="heightIndicator">
             <div id="playerIndicator"></div>
         </div>
-        <button id="muteButton">🔊</button>
+        <button id="muteButton"></button>
         <button id="pauseButton">⏸</button>
         <div id="gameOver">
             Game Over!
@@ -297,7 +297,7 @@
             <!-- Practice Mode with tooltip -->
             <div style="margin: 20px 0;" title="In practice mode, you won't die and can practice the level freely">
                 <label for="practiceMode">Practice Mode: </label>
-                <input type="checkbox" id="practiceMode">
+                <input type="checkbox" id="practiceMode" name="practiceMode">
             </div>
 
             <!-- Custom Controls with tooltip -->
@@ -572,6 +572,7 @@
 
         // Audio elements for game sounds
         let backgroundMusic = new Audio();
+        let practiceMusic = new Audio('../Sound/Basic Soundeffects/practicetd.mp3');
         let jumpSound = new Audio();
         let deathSound = new Audio();
         let completionSound = new Audio();
@@ -646,37 +647,35 @@
          * Includes error handling for failed audio loading
          */
         function setupAudio() {
-            console.log('[Line 80] Setting up audio');
+            console.log('Setting up audio');
             try {
-                // Initialize audio elements
-                backgroundMusic = new Audio();
+                // Initialize audio elements with proper sources
+                backgroundMusic = new Audio(levelMusic);
+                practiceMusic = new Audio('../Sound/Basic Soundeffects/practicetd.mp3');
                 jumpSound = new Audio('../Sound/Basic Soundeffects/jumptd.mp3');
                 deathSound = new Audio('../Sound/Basic Soundeffects/deathtd.ogg');
                 completionSound = new Audio('../Sound/Basic Soundeffects/lvlcompletetd.mp3');
 
-                // Set background music based on level settings
-                if (levelMusic) {
-                    backgroundMusic.src = levelMusic;
-                } else {
-                    backgroundMusic.src = 'sounds/background.mp3';  // default music
-                }
-
                 // Set audio properties
                 backgroundMusic.loop = true;
-                backgroundMusic.volume = 0.6;
-                jumpSound.volume = 0.2;
-                deathSound.volume = 0.7;
-                completionSound.volume = 0.7;
+                practiceMusic.loop = true;
+                
+                // Set volumes
+                const volumeLevel = document.getElementById('volumeSlider').value / 100;
+                backgroundMusic.volume = volumeLevel * 0.6;
+                practiceMusic.volume = volumeLevel * 0.6;
+                jumpSound.volume = volumeLevel * 0.2;
+                deathSound.volume = volumeLevel * 0.7;
+                completionSound.volume = volumeLevel * 0.7;
 
-                // Set mute state
-                backgroundMusic.muted = isMuted;
-                jumpSound.muted = isMuted;
-                deathSound.muted = isMuted;
-                completionSound.muted = isMuted;
+                // Set initial mute states
+                [backgroundMusic, practiceMusic, jumpSound, deathSound, completionSound].forEach(audio => {
+                    audio.muted = isMuted;
+                });
 
-                console.log('[Line 81] Audio setup complete');
+                console.log('Audio setup complete');
             } catch (error) {
-                console.error('[Line 82] Audio setup failed:', error);
+                console.error('Audio setup failed:', error);
             }
         }
 
@@ -691,13 +690,24 @@
          * Affects background music and all sound effects
          */
         function toggleMute() {
-            if (!backgroundMusic) return;  // Guard clause if audio isn't initialized
-            
             isMuted = !isMuted;
-            backgroundMusic.muted = isMuted;
-            jumpSound.muted = isMuted;
-            deathSound.muted = isMuted;
-            completionSound.muted = isMuted;
+            const currentMusic = isPracticeMode ? practiceMusic : backgroundMusic;
+            
+            // Mute/unmute all audio elements
+            [backgroundMusic, practiceMusic, jumpSound, deathSound, completionSound].forEach(audio => {
+                if (audio) audio.muted = isMuted;
+            });
+            
+            // If unmuting, make sure the correct music is playing
+            if (!isMuted) {
+                if (isPracticeMode) {
+                    backgroundMusic.pause();
+                    practiceMusic.play().catch(e => console.error("Error playing practice music:", e));
+                } else {
+                    practiceMusic.pause();
+                    backgroundMusic.play().catch(e => console.error("Error playing background music:", e));
+                }
+            }
         }
 
         // Add these debug logs right after
@@ -936,15 +946,12 @@
          */
         console.log('[Line 80] About to define updateGame');
         function updateGame() {
-            console.log('Update game called');
             // Don't update if game isn't in active state
             if (!isLevelStarted || isGameOver || isLevelComplete) {
-                console.log('Game not in active state', { isLevelStarted, isGameOver, isLevelComplete });
                 return;
             }
             
             if (isPaused) {
-                console.log('Game paused');
                 requestAnimationFrame(updateGame);
                 return;
             }
@@ -1018,14 +1025,17 @@
                     if (collision) {
                         if (obstacle.type === 'finish') {
                             levelComplete();
-                        } else if (obstacle.type === 'spike') {
+                        } else if (obstacle.type === 'spike' && !isPracticeMode) {  // Check practice mode
                             gameOver();
                         } else if (obstacle.type === 'teleporter') {
                             player.style.bottom = (parseInt(player.style.bottom) + 100) + 'px';
                             playerVelocity = 0;
                             createParticles('#ff00ff'); // Purple particles on teleport
                         } else if (obstacle.type === 'platform') {
-                            handlePlatformCollision(playerRect, obstacle.element);
+                            const platformCollision = handlePlatformCollision(playerRect, obstacle.element);
+                            if (platformCollision === 'death' && !isPracticeMode) {  // Check practice mode
+                                gameOver();
+                            }
                         }
                     }
                 }
@@ -1133,16 +1143,15 @@
                 playerBottom >= platformBottom &&
                 horizontalOverlap > playerWidth * 0.3) {
                 
-                // Safe landing on platform
+                // Safe landing
                 isOnPlatform = true;
                 isJumping = false;
                 doubleJumpAvailable = true;
                 playerVelocity = 0;
-                
-                // Set player position on top of platform using absolute values
                 player.style.bottom = (platformBottom + 45) + 'px';
-            } else if (!isPracticeMode) {
-                // Side collision check using absolute positions
+                return 'safe';
+            } else {
+                // Side collision check
                 const playerCenterX = playerLeft + (playerWidth / 2);
                 const significantOverlap = horizontalOverlap > playerWidth * 0.4;
                 
@@ -1150,9 +1159,10 @@
                     playerCenterX > platformLeft + 5 && 
                     playerCenterX < platformLeft + 40 &&
                     playerBottom > platformBottom + 15) {
-                    gameOver();
+                    return 'death';
                 }
             }
+            return 'none';
         }
         console.log('[Line 105] handlePlatformCollision defined');
 
@@ -1162,7 +1172,7 @@
          */
         console.log('[Line 110] About to define gameOver');
         function gameOver() {
-            if (!isPracticeMode) {
+            if (!isPracticeMode) {  // Only trigger game over if NOT in practice mode
                 isGameOver = true;
                 
                 if (gameOverElement) {
@@ -1170,7 +1180,11 @@
                 }
                 
                 if (!isMuted) {
-                    backgroundMusic.pause();
+                    if (isPracticeMode) {
+                        practiceMusic.pause();
+                    } else {
+                        backgroundMusic.pause();
+                    }
                     deathSound.currentTime = 0;
                     deathSound.play();
                 }
@@ -1191,6 +1205,7 @@
                 player.style.bottom = '50px';
                 playerVelocity = 0;
                 rotation = 0;
+                createParticles('#ff00ff'); // Different color particles for practice mode respawn
             }
         }
         console.log('[Line 115] gameOver defined');
@@ -1248,14 +1263,20 @@
             progressFill.style.width = '0%';
             progressText.textContent = '0%';
 
-            // Reset and replay background music
+            // Reset and replay the correct music
             if (!isMuted) {
                 try {
-                    backgroundMusic.pause();
-                    backgroundMusic.currentTime = 0;
-                    backgroundMusic.play().catch(error => console.log("Audio playback failed:", error));
+                    if (isPracticeMode) {
+                        backgroundMusic.pause();
+                        practiceMusic.currentTime = 0;
+                        practiceMusic.play();
+                    } else {
+                        practiceMusic.pause();
+                        backgroundMusic.currentTime = 0;
+                        backgroundMusic.play();
+                    }
                 } catch (error) {
-                    console.log("Audio reset failed:", error);
+                    console.error("Audio reset failed:", error);
                 }
             }
             
@@ -1402,12 +1423,13 @@
          * Used during level completion and game over
          */
         function fadeOutMusic() {
-            if (backgroundMusic.volume > 0.02) {
-                backgroundMusic.volume -= 0.02;  // Reduce volume by 2%
+            const currentMusic = isPracticeMode ? practiceMusic : backgroundMusic;
+            if (currentMusic.volume > 0.02) {
+                currentMusic.volume -= 0.02;  // Reduce volume by 2%
                 setTimeout(fadeOutMusic, 100);   // Check again in 100ms
             } else {
-                backgroundMusic.pause();
-                backgroundMusic.volume = 0.6;    // Reset volume for next time
+                currentMusic.pause();
+                currentMusic.volume = 0.6;    // Reset volume for next time
             }
         }
 
@@ -1420,7 +1442,6 @@
             const settingsMenu = document.getElementById('settingsMenu');
             const volumeSlider = document.getElementById('volumeSlider');
             const volumeValue = document.getElementById('volumeValue');
-            const practiceModeCheckbox = document.getElementById('practiceMode');
             const controlMethodSelect = document.getElementById('controlMethod');
             const autoRestartCheckbox = document.getElementById('autoRestart');
             const startLevelBtn = document.getElementById('startLevelBtn');
@@ -1437,10 +1458,39 @@
                 completionSound.volume = (volume / 100) * 0.7; // Completion sound moderate
             });
 
-            // Toggle for practice mode (immortality)
-            practiceModeCheckbox.addEventListener('change', function() {
-                isPracticeMode = this.checked;
-            });
+            // Practice mode setup
+            const practiceModeCheckbox = document.getElementById('practiceMode');
+            if (practiceModeCheckbox) {
+                console.log('Found practice mode checkbox');
+                practiceModeCheckbox.addEventListener('change', function() {
+                    isPracticeMode = this.checked;
+                    
+                    // Only switch music if the level is actually running
+                    if (isLevelStarted && !isPaused && !isGameOver && !isLevelComplete) {
+                        if (isPracticeMode) {
+                            backgroundMusic.pause();
+                            practiceMusic.currentTime = 0;
+                            if (!isMuted) {
+                                practiceMusic.play()
+                                    .catch(error => console.error("Practice music playback failed:", error));
+                            }
+                        } else {
+                            practiceMusic.pause();
+                            backgroundMusic.currentTime = 0;
+                            if (!isMuted) {
+                                backgroundMusic.play()
+                                    .catch(error => console.error("Normal music playback failed:", error));
+                            }
+                        }
+                    } else {
+                        // If level isn't running, make sure both music tracks are paused
+                        backgroundMusic.pause();
+                        practiceMusic.pause();
+                    }
+                });
+            } else {
+                console.error('Practice mode checkbox not found!');
+            }
 
             /**
              * Configures control scheme based on user selection
@@ -1591,19 +1641,23 @@
             if (isGameOver || isLevelComplete || !isLevelStarted) return;
             
             isPaused = !isPaused;
-            const pauseButton = document.getElementById('pauseButton');
+            pauseMenu.style.display = isPaused ? 'block' : 'none';
             
             if (isPaused) {
-                pauseMenu.style.display = 'block';
-                pauseButton.textContent = '▶';  // Play icon
-                if (!isMuted && backgroundMusic) {
+                // Pause the appropriate music
+                if (isPracticeMode) {
+                    practiceMusic.pause();
+                } else {
                     backgroundMusic.pause();
                 }
             } else {
-                pauseMenu.style.display = 'none';
-                pauseButton.textContent = '⏸';  // Pause icon
-                if (!isMuted && backgroundMusic) {
-                    backgroundMusic.play().catch(error => console.log("Audio resume failed:", error));
+                // Resume the appropriate music if not muted
+                if (!isMuted) {
+                    if (isPracticeMode) {
+                        practiceMusic.play();
+                    } else {
+                        backgroundMusic.play();
+                    }
                 }
             }
         }
@@ -1849,12 +1903,18 @@
                     settingsMenu.style.display = 'none';
                     isLevelStarted = true;
                     
-                    // Start background music if not muted
-                    if (!isMuted && backgroundMusic) {
+                    // Start the appropriate music
+                    if (!isMuted) {
                         try {
-                            await backgroundMusic.play();
+                            if (isPracticeMode) {
+                                backgroundMusic.pause();
+                                await practiceMusic.play();
+                            } else {
+                                practiceMusic.pause();
+                                await backgroundMusic.play();
+                            }
                         } catch (error) {
-                            console.log("Audio autoplay prevented:", error);
+                            console.error("Audio playback failed:", error);
                         }
                     }
 
@@ -1892,6 +1952,41 @@
             particles = [];
             console.log('[Line 59] Particles cleanup complete');
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const practiceModeCheckbox = document.getElementById('practiceMode');
+            if (practiceModeCheckbox) {
+                console.log('Found practice mode checkbox');
+                practiceModeCheckbox.addEventListener('change', function() {
+                    isPracticeMode = this.checked;
+                    
+                    // Only switch music if the level is actually running
+                    if (isLevelStarted && !isPaused && !isGameOver && !isLevelComplete) {
+                        if (isPracticeMode) {
+                            backgroundMusic.pause();
+                            practiceMusic.currentTime = 0;
+                            if (!isMuted) {
+                                practiceMusic.play()
+                                    .catch(error => console.error("Practice music playback failed:", error));
+                            }
+                        } else {
+                            practiceMusic.pause();
+                            backgroundMusic.currentTime = 0;
+                            if (!isMuted) {
+                                backgroundMusic.play()
+                                    .catch(error => console.error("Normal music playback failed:", error));
+                            }
+                        }
+                    } else {
+                        // If level isn't running, make sure both music tracks are paused
+                        backgroundMusic.pause();
+                        practiceMusic.pause();
+                    }
+                });
+            } else {
+                console.error('Practice mode checkbox not found!');
+            }
+        });
     </script>
 </body>
 </html>
