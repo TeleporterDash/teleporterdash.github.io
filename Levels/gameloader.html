@@ -365,42 +365,142 @@
         let levelId;              // Stores the unique level identifier
 
         /**
-         * Initializes level data either from a test level or from a level file
-         * Returns a Promise that resolves when level data is loaded
-         */
+        * Initializes level data either from a test level or from a level file
+        * Returns a Promise that resolves when level data is loaded
+        */
         async function initializeLevelData() {
             console.log('[Line 20] initializeLevelData called');
             return new Promise((resolve, reject) => {
                 console.log('[Line 22] Inside Promise');
                 if (window.location.search.includes('test=true')) {
-                    console.log('[Line 24] Loading test level');
-                    // Load test level data from URL parameters (used by level editor)
+                    console.log('[Line 24] Loading test level from editor');
                     const urlParams = new URLSearchParams(window.location.search);
                     const testData = JSON.parse(decodeURIComponent(urlParams.get('data')));
-                    levelMatrix = testData.matrix;
+                    console.log('[Line 27] Test data:', testData);
+                    
+                    // Extract color row and remove it from gameplay matrix
+                    const colorRow = testData.matrix[0];
+                    console.log('[Line 31] Editor color row:', colorRow);
+                    
+                    levelMatrix = testData.matrix.slice(1);
                     levelTitle = testData.name;
                     levelMusic = testData.music;
                     levelId = testData.id;
                     document.title = levelTitle;
+                    
+                    // Process colors
+                    colorSteps.length = 0;
+                    const uniqueColors = [...new Set(colorRow)].filter(code => code < 0);
+                    console.log('[Line 41] Editor unique color codes:', uniqueColors);
+                    
+                    uniqueColors.forEach(code => {
+                        const color = COLOR_MAP[code];
+                        console.log(`[Line 44] Processing editor color code ${code}:`, {
+                            code: code,
+                            mappedColor: color,
+                            colorMap: COLOR_MAP
+                        });
+                        if (color) {
+                            colorSteps.push(color);
+                        }
+                    });
+                    
+                    // If we only have one color, duplicate it
+                    if (colorSteps.length === 1) {
+                        console.log('[Line 54] Only one editor color found, duplicating for transition');
+                        colorSteps.push(colorSteps[0]);
+                    }
+                    
+                    console.log('[Line 58] Final editor color steps:', {
+                        length: colorSteps.length,
+                        colors: colorSteps
+                    });
+                    
+                    // Set initial background color and start update loop
+                    const gameContainer = document.getElementById('gameContainer');
+                    if (gameContainer && colorSteps.length > 0) {
+                        console.log('[Line 65] Setting initial editor background color:', colorSteps[0]);
+                        gameContainer.style.backgroundColor = colorSteps[0];
+                        // Start the game update loop
+                        requestAnimationFrame(updateGame);
+                    }
+                    
                     resolve();
                 } else {
-                    console.log('[Line 30] Loading regular level');
+                    console.log('[Line 26] Loading regular level');
                     const urlParams = new URLSearchParams(window.location.search);
                     const levelNumber = urlParams.get('level') || '1';  // Default to level 1 if no level specified
                     
-                    console.log('[Line 33] Loading level:', levelNumber);
+                    console.log('[Line 29] Loading level:', levelNumber);
                     
                     // Dynamically load the level script file
                     const levelScript = document.createElement('script');
                     levelScript.src = `level${levelNumber}.js`;
-                    console.log('[Line 37] Created script element for:', levelScript.src);
+                    console.log('[Line 33] Created script element for:', levelScript.src);
                     
                     levelScript.onload = () => {
-                        console.log('[Line 40] Level script loaded');
+                        console.log('[Line 36] Level script loaded');
                         if (window.levelData) {
-                            console.log('[Line 42] Level data found:', window.levelData);
-                            // Transfer level data from loaded script to global variables
-                            levelMatrix = window.levelData.matrix;
+                            console.log('[Line 38] Level data found:', window.levelData);
+                            
+                            // Extract color row and log it
+                            const colorRow = window.levelData.matrix[0];
+                            console.log('[Line 41] Color row:', colorRow);
+                            
+                            // Remove color row from gameplay matrix
+                            levelMatrix = window.levelData.matrix.slice(1);
+                            console.log('[Line 44] Gameplay matrix (without color row):', levelMatrix);
+                            
+                            // Set up color steps
+                            console.log('[Line 47] Previous colorSteps:', colorSteps);
+                            colorSteps.length = 0;
+                            console.log('[Line 49] Cleared existing color steps');
+                            
+                            // Get unique color codes only
+                            const uniqueColors = [...new Set(colorRow)].filter(code => code < 0);
+                            console.log('[Line 52] Unique color codes:', uniqueColors);
+                            
+                            // Convert codes to actual colors
+                            uniqueColors.forEach(code => {
+                                const color = COLOR_MAP[code];
+                                console.log(`[Line 56] Processing code ${code}:`, {
+                                    code: code,
+                                    mappedColor: color,
+                                    colorMap: COLOR_MAP
+                                });
+                                if (color) {
+                                    colorSteps.push(color);
+                                }
+                            });
+                            
+                            // If we only have one color, duplicate it to create a transition
+                            if (colorSteps.length === 1) {
+                                console.log('[Line 64] Only one color found, duplicating for transition');
+                                colorSteps.push(colorSteps[0]);
+                            }
+                            
+                            console.log('[Line 67] Final color steps:', {
+                                length: colorSteps.length,
+                                colors: colorSteps
+                            });
+                            
+                            // Reset color transition
+                            colorIndex = 0;
+                            transitionFactor = 0;
+                            console.log('[Line 73] Color transition reset:', {
+                                colorIndex,
+                                transitionFactor,
+                                currentColor: colorSteps[colorIndex]
+                            });
+                            
+                            // Set initial background color
+                            const gameContainer = document.getElementById('gameContainer');
+                            if (gameContainer && colorSteps.length > 0) {
+                                console.log('[Line 80] Setting initial background color:', colorSteps[0]);
+                                gameContainer.style.backgroundColor = colorSteps[0];
+                            }
+                            
+                            // Set other level data
                             levelTitle = window.levelData.title;
                             levelMusic = window.levelData.music;
                             levelId = window.levelData.id;
@@ -550,9 +650,9 @@
             try {
                 // Initialize audio elements
                 backgroundMusic = new Audio();
-                jumpSound = new Audio('sounds/jump.mp3');
-                deathSound = new Audio('sounds/death.mp3');
-                completionSound = new Audio('sounds/complete.mp3');
+                jumpSound = new Audio('../Sound/Basic Soundeffects/jumptd.mp3');
+                deathSound = new Audio('../Sound/Basic Soundeffects/deathtd.ogg');
+                completionSound = new Audio('../Sound/Basic Soundeffects/lvlcompletetd.mp3');
 
                 // Set background music based on level settings
                 if (levelMusic) {
@@ -1530,29 +1630,35 @@
 
         // Define a function to smoothly transition between two colors
         function interpolateColor(color1, color2, factor) {
-            if (!color1 || !color2) {
-                return COLOR_MAP['-1']; // Default to black if colors are invalid
-            }
+            console.log('[Line 41] Interpolating colors:', { color1, color2, factor });
             
             try {
-                const c1 = color1.match(/\d+/g)?.map(Number) || [0, 0, 0];
-                const c2 = color2.match(/\d+/g)?.map(Number) || [0, 0, 0];
+                // Convert hex to RGB
+                const c1 = color1.match(/[A-Za-z0-9]{2}/g).map(v => parseInt(v, 16));
+                const c2 = color2.match(/[A-Za-z0-9]{2}/g).map(v => parseInt(v, 16));
                 
-                const result = c1.map((c, i) => Math.round(c + (c2[i] - c) * factor));
-                return `rgb(${result.join(",")})`;
+                // Interpolate each component
+                const result = c1.map((c, i) => {
+                    const val = Math.round(c * (1 - factor) + c2[i] * factor);
+                    return val.toString(16).padStart(2, '0');
+                });
+                
+                const finalColor = '#' + result.join('');
+                console.log('[Line 54] Interpolation result:', finalColor);
+                return finalColor;
             } catch (error) {
-                console.warn('Color interpolation failed:', error);
-                return COLOR_MAP['-1']; // Default to black
+                console.error('[Line 57] Interpolation error:', error);
+                return color1; // Return first color on error
             }
         }
 
         // Color mapping from level editor
         const COLOR_MAP = {
-            '-1': '#000000',  // Black
-            '-2': '#913291',  // Dark purple
-            '-3': '#339033',  // Dark green
-            '-4': '#963535',  // Dark red
-            '-5': '#2a2a8d'   // Dark blue
+            '-1': '#000000',    // Default black
+            '-2': '#622f62',    // Dark purple
+            '-3': '#305d30',    // Dark green
+            '-4': '#743a3a',    // Dark red
+            '-5': '#353576'    // Dark blue
         };
 
         // Smooth background transition logic using the color codes
@@ -1565,26 +1671,46 @@
         ];
         let colorIndex = 0;
         let transitionFactor = 0;
-        const transitionSpeed = 0.005; // Slower transition for smoother effect
+        const transitionSpeed = 0.0029;
 
         function updateBackgroundColor() {
-            if (colorIndex < colorSteps.length - 1) {
-                transitionFactor += transitionSpeed;
-                
-                if (transitionFactor >= 1) {
-                    transitionFactor = 0;
-                    colorIndex = (colorIndex + 1) % (colorSteps.length - 1);
+            // If we've reached the end of colors, stay on last color
+            if (colorIndex >= colorSteps.length - 1 && transitionFactor >= 1) {
+                console.log('[Line 4] Reached final color:', colorSteps[colorSteps.length - 1]);
+                return;
+            }
+
+            if (colorSteps.length < 2) {
+                return;
+            }
+
+            transitionFactor += transitionSpeed;
+            
+            if (transitionFactor >= 1) {
+                transitionFactor = 0;
+                // Only increment if we're not at the last color
+                if (colorIndex < colorSteps.length - 1) {
+                    colorIndex++;
+                    console.log('[Line 19] Moving to next color:', {
+                        newColorIndex: colorIndex,
+                        color: colorSteps[colorIndex]
+                    });
                 }
-                
-                const currentColor = colorSteps[colorIndex];
-                const nextColor = colorSteps[colorIndex + 1];
+            }
+            
+            const currentColor = colorSteps[colorIndex];
+            const nextColor = colorSteps[Math.min(colorIndex + 1, colorSteps.length - 1)];
+            
+            try {
                 const newColor = interpolateColor(currentColor, nextColor, transitionFactor);
-                
                 const gameContainer = document.getElementById('gameContainer');
                 if (gameContainer) {
-                    gameContainer.style.setProperty("--from-color", newColor);
+                    gameContainer.style.backgroundColor = newColor;
+                    gameContainer.style.setProperty("--from-color", currentColor);
                     gameContainer.style.setProperty("--to-color", nextColor);
                 }
+            } catch (error) {
+                console.error('[Line 37] Error updating background:', error);
             }
         }
 
@@ -1685,7 +1811,10 @@
                 const settingsMenu = document.getElementById('settingsMenu');
                 
                 try {
-                    // Visual feedback for loading
+                    // Load level data first
+                    await initializeLevelData();
+                    
+                    // Rest of your start button code...
                     loadingAnimation.style.display = 'block';
                     this.style.display = 'none';
 
