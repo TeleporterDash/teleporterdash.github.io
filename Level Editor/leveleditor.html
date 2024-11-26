@@ -275,11 +275,12 @@
 
             <div class="action-group">
                 <button id="exportBtn">Export Level</button>
+                <button id="importBtn">Import Level</button>
                 <button id="testBtn">Test Level</button>
                 <button id="clearBtn">Clear Grid</button>
             </div>
 
-            <textarea id="exportArea" readonly placeholder="Exported level data will appear here..."></textarea>
+            <textarea id="importArea" style="display: none;"></textarea>
         </div>
     </div>
     <audio id="musicPreview" src="../Sound/Level Soundtracks/"></audio>
@@ -296,6 +297,8 @@
         const previewMusicBtn = document.getElementById('previewMusic');
         const levelNameInput = document.getElementById('levelName');
         const bgColorSelect = document.getElementById('bgColor');
+        let hasUnsavedChanges = false;
+        let lastExportedMatrix = null;
 
         let currentTool = '0';
         let isMouseDown = false;
@@ -434,6 +437,11 @@
                 colorCell.style.backgroundColor = COLOR_MAP[selectedColor] || COLOR_MAP[0];
             }
         }
+        function hasMatrixChanged() {
+            if (!lastExportedMatrix) return levelMatrix.some(row => row.some(cell => cell !== 0));
+            return JSON.stringify(levelMatrix) !== JSON.stringify(lastExportedMatrix);
+        }
+
 
         // Update the handleCellClick function to ensure proper color application
         function handleCellClick(e) {
@@ -544,8 +552,8 @@ window.levelData = {
     title: "${levelName}",
     matrix: ${JSON.stringify(levelMatrix, null, 4)},
     music: "${musicFile}",
-    colorTransitionDuration: 0.5,  // Reduced from 3 to 0.5 for smoother transitions
-    colorTransitionDelay: 0.1      // Add small delay between transitions
+    colorTransitionDuration: 0.5, 
+    colorTransitionDelay: 0.1    
 };
 
 // Registry entry for this level
@@ -592,6 +600,9 @@ window.levelRegistry.push({
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                 });
+            // After successful export, save the current state
+            lastExportedMatrix = JSON.parse(JSON.stringify(levelMatrix));
+            hasUnsavedChanges = false;
         });
 
         // Add this for handling custom music file selection
@@ -628,6 +639,8 @@ window.levelRegistry.push({
             if (confirm('Are you sure you want to clear the grid?')) {
                 levelMatrix = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(0));
                 updateGridVisuals();
+                hasUnsavedChanges = false;
+                lastExportedMatrix = null;
             }
         });
 
@@ -709,6 +722,103 @@ window.levelRegistry.push({
         // Update the color picker change handler
         colorPicker.addEventListener('change', function() {
             handleColorSelection(parseInt(this.value));
+        });
+
+        // Add these functions after the existing variable declarations
+        function importMatrix() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.js,.txt,application/json';
+            
+            fileInput.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const content = e.target.result;
+                        let parsed;
+                        
+                        // Try to extract matrix from different formats
+                        if (content.includes('window.levelData')) {
+                            // Extract the entire levelData object
+                            const levelDataMatch = content.match(/window\.levelData\s*=\s*({[\s\S]*?});/);
+                            if (levelDataMatch) {
+                                // Parse the levelData object
+                                const levelData = Function(`return ${levelDataMatch[1]}`)();
+                                parsed = levelData.matrix;
+                                
+                                // Update level name if available
+                                if (levelData.title) {
+                                    document.getElementById('levelName').value = levelData.title;
+                                }
+                                
+                                // Update music selection if available
+                                if (levelData.music) {
+                                    const musicPath = levelData.music.split('/').pop();
+                                    const musicSelect = document.getElementById('musicSelect');
+                                    Array.from(musicSelect.options).forEach(option => {
+                                        if (option.value === musicPath) {
+                                            option.selected = true;
+                                        }
+                                    });
+                                }
+                            }
+                        } else if (content.includes('matrix:')) {
+                            // Handle matrix: [...] format
+                            const matrixMatch = content.match(/matrix:\s*(\[[\s\S]*?\])/);
+                            if (matrixMatch) {
+                                parsed = JSON.parse(matrixMatch[1].replace(/\s+/g, ''));
+                            }
+                        } else {
+                            // Try direct JSON array
+                            parsed = JSON.parse(content);
+                        }
+
+                        if (Array.isArray(parsed) && Array.isArray(parsed[0])) {
+                            // Update grid dimensions to match imported matrix
+                            GRID_HEIGHT = parsed.length;
+                            GRID_WIDTH = parsed[0].length;
+                            gridWidthInput.value = GRID_WIDTH;
+                            gridHeightInput.value = GRID_HEIGHT;
+                            hasUnsavedChanges = true;
+                            lastExportedMatrix = null;
+                            
+                            // Update level matrix
+                            levelMatrix = parsed;
+                            
+                            // Recreate grid with new dimensions and data
+                            createGrid();
+                            updateGridVisuals();
+                        } else {
+                            throw new Error('Invalid matrix format');
+                        }
+                    } catch (e) {
+                        alert('Invalid matrix format! ' + e.message);
+                        console.error(e);
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            fileInput.click();
+        }
+
+        // Add event listener for import button
+        document.getElementById('importBtn').addEventListener('click', importMatrix);
+        // Add this to track changes when updating cells
+        function updateCell(row, col, value) {
+            levelMatrix[row][col] = value;
+            hasUnsavedChanges = true;
+            updateGridVisuals();
+        }
+        window.addEventListener('beforeunload', (e) => {
+            if (hasMatrixChanged()) {
+                e.preventDefault();
+                // Most browsers will show their own message, but we can set a custom one for older browsers
+                 e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+            }
         });
     </script>
 </body>
