@@ -1,5 +1,6 @@
 window.levelData = {
     id: 2,
+    author: "NellowTCS",    // Creator of the level
     title: "Level 2 - Teleport Back",
     matrix: [
         [0,
@@ -1766,12 +1767,7 @@ window.levelData = {
         4]
     ],
     difficulty: "Normal",
-    music: "../Sound/Level Soundtracks/level2.mp3"
+    music: "../Sound/Level Soundtracks/level2.mp3",
+    colorTransitionDuration: 0.5, 
+    colorTransitionDelay: 0.1    
 };
-// Registry entry for this level
-window.levelRegistry = window.levelRegistry || [];
-window.levelRegistry.push({
-    id: 2,
-    title: "Level 2 - Teleport Back",
-    difficulty: "Normal"
-});

@@ -1,6 +1,8 @@
 // Level 3 - Strange Teleporters
 window.levelData = {
     id: 3,
+    author: "NellowTCS",    // Creator of the level
+    difficulty: "Hard",
     title: "Level 3 - Strange Teleporters",
     matrix: [
     [
@@ -3280,15 +3282,7 @@ window.levelData = {
         4
     ]
 ],
-    music: "level3.mp3",
+    music: "../Sound/Level Soundtracks/level3.mp3",
     colorTransitionDuration: 0.5, 
     colorTransitionDelay: 0.1    
 };
-
-// Registry entry for this level
-window.levelRegistry = window.levelRegistry || [];
-window.levelRegistry.push({
-    id: 3,
-    title: "Level 3 - Strange Teleporters",
-    difficulty: 'Hard'
-});

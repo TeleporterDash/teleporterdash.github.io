@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level Store - Teleporter Dash</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
+
+        :root {
+            --primary-color: #0F9D58;
+            --secondary-color: #4285F4;
+            --background-color: #1a1a2e;
+            --gradient: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            --text-color: #000000;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: 'Orbitron', sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .store-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 2rem;
+            padding: 1rem;
+        }
+
+        .level-card {
+            background-color: var(--secondary-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 10px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            transition: transform 0.2s;
+        }
+
+        .level-card:hover {
+            transform: scale(1.05);
+        }
+
+        .level-preview {
+            width: 200px;
+            height: 150px;
+            background-color: #1a1a2e;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+
+        .level-info {
+            text-align: center;
+        }
+
+        .level-title {
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        .level-author {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .level-stats {
+            display: flex;
+            justify-content: space-around;
+            font-size: 0.8rem;
+        }
+
+        /* Headings */
+        h1, h2 {
+            color: var(--primary-color);
+            text-shadow: var(--shadow-glow);
+        }
+        button {
+            background: var(--gradient);
+            border: 2px solid var(--primary-color);
+            border-radius: 10px;
+            color: var(--bg-darker);
+            font-weight: bold;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-family: sans-serif;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background: linear-gradient(45deg, var(--secondary-color), var(--primary-color));
+            transform: scale(1.05);
+        }
+
+        .back-button {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 100;
+        }
+
+        .filters {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .search-bar {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .search-bar input {
+            padding: 0.5rem;
+            width: 300px;
+            border: 2px solid var(--primary-color);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            border-radius: 5px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .preview-canvas {
+            image-rendering: pixelated;
+        }
+
+        .download-button {
+            transition: all 0.3s ease;
+        }
+        .download-button.downloaded {
+            background: var(--secondary-color);
+            cursor: default;
+        }
+        .download-button.downloaded:hover {
+            transform: none;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        .delete-button {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        
+        .delete-button:hover {
+            background-color: #ff0000;
+        }
+        
+        .delete-button.hidden {
+            display: none;
+        }
+        
+        .download-button {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <button class="back-button" onclick="window.location.href='../index.html'">Back to Menu</button>
+
+    <div class="store-container">
+        <div class="header">
+            <h1>Level Store</h1>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" placeholder="Search levels..." onkeyup="searchLevels(this.value)">
+        </div>
+
+        <div class="filters">
+            <button onclick="filterLevels('newest')">Newest</button>
+            <button onclick="filterLevels('popular')">Most Popular</button>
+            <button onclick="filterLevels('difficulty')">By Difficulty</button>
+        </div>
+
+        <div class="level-grid" id="levelGrid">
+            <!-- Level cards will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <script>
+        // Store levels array
+        const storeLevels = [];
+        const GITHUB_API_BASE = 'https://api.github.com/repos/NellowTCS/TeleporterDashLevels';
+        const RAW_CONTENT_BASE = 'https://raw.githubusercontent.com/NellowTCS/TeleporterDashLevels/main';
+
+        // Initialize IndexedDB
+        let db;
+        const DB_NAME = 'TeleporterDashDB';
+        const STORE_NAME = 'downloadedLevels';
+        const DB_VERSION = 2; // Increment version to force upgrade
+        
+        // ===== Database Management =====
+        async function deleteDatabase() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.deleteDatabase(DB_NAME);
+                request.onsuccess = () => {
+                    console.log('Database deleted successfully');
+                    resolve();
+                };
+                request.onerror = () => {
+                    console.error('Error deleting database');
+                    reject();
+                };
+            });
+        }
+        
+        function initDB() {
+            return new Promise((resolve, reject) => {
+            console.log('Initializing database...');
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                
+                request.onerror = (event) => {
+                    console.error('Database error:', event.target.error);
+                    reject(event.target.error);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    console.log('Database upgrade needed');
+                    const db = event.target.result;
+                    
+                    // Only create store if it doesn't exist
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        console.log('Creating object store:', STORE_NAME);
+                        const store = db.createObjectStore(STORE_NAME, { keyPath: 'filename' });
+                        store.createIndex('title', 'title', { unique: false });
+                        store.createIndex('dateDownloaded', 'dateDownloaded', { unique: false });
+                    }
+                };
+                
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    console.log('Database initialized successfully');
+                    resolve(db);
+                };
+            });
+        }
+
+        // ===== Level Store Management =====
+        async function loadStoreLevels() {
+            try {
+                // Clear existing levels
+                storeLevels.length = 0;
+                
+                // Show loading state
+                document.getElementById('levelGrid').innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center;">
+                        Loading levels...
+                    </div>`;
+                
+                // Fetch the list of files from the GitHub repository
+                const response = await fetch(`${GITHUB_API_BASE}/contents`);
+                if (!response.ok) {
+                    throw new Error(`GitHub API error: ${response.status}`);
+                }
+                
+                const files = await response.json();
+                
+                // Filter for .js files
+                const levelFiles = files.filter(file => file.name.endsWith('.js'));
+                console.log('Found level files:', levelFiles);
+                
+                if (levelFiles.length === 0) {
+                    throw new Error('No level files found in repository');
+                }
+                
+                // Load each level file and check downloaded status
+                const levelPromises = levelFiles.map(async file => {
+                    try {
+                        // Fetch the raw content of the level file
+                        const levelResponse = await fetch(`${RAW_CONTENT_BASE}/${file.name}`);
+                        if (!levelResponse.ok) {
+                            throw new Error(`Failed to fetch level ${file.name}`);
+                        }
+                        
+                        const levelCode = await levelResponse.text();
+                        
+                        // Create a safe environment to evaluate the level code
+                        const levelData = new Function(`
+                            let window = {};
+                            ${levelCode}
+                            return window.levelData;
+                        `)();
+                        
+                        if (!levelData || !levelData.matrix) {
+                            throw new Error(`Invalid level data in ${file.name}`);
+                        }
+                        
+                        // Add metadata
+                        levelData.filename = file.name;
+                        levelData.dateAdded = levelData.dateAdded || new Date().toISOString();
+                        levelData.plays = levelData.plays || 0;
+                        levelData.rating = levelData.rating || 0;
+                        levelData.difficulty = levelData.difficulty || getDifficultyFromMatrix(levelData.matrix);
+                        
+                        // Check if this level is downloaded
+                        levelData.isDownloaded = await isLevelDownloaded(file.name);
+                        
+                        return levelData;
+                    } catch (error) {
+                        console.error(`Error loading level ${file.name}:`, error);
+                        return null;
+                    }
+                });
+                
+                // Wait for all levels to load
+                const loadedLevels = await Promise.all(levelPromises);
+                
+                // Filter out any failed loads and add to storeLevels
+                const validLevels = loadedLevels.filter(level => level !== null);
+                
+                if (validLevels.length === 0) {
+                    throw new Error('No valid levels could be loaded');
+                }
+                
+                storeLevels.push(...validLevels);
+                
+                // Display the loaded levels
+                displayLevels(storeLevels);
+            } catch (error) {
+                console.error('Error loading levels from GitHub:', error);
+                document.getElementById('levelGrid').innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; color: red;">
+                        ${error.message || 'Error loading levels. Please try again later.'}
+                    </div>`;
+            }
+        }
+
+        // // Level Download Management
+        async function downloadLevel(filename) {
+            if (!db) {
+                try {
+                    await initDB();
+                } catch (error) {
+                    console.error('Failed to initialize database:', error);
+                    return false;
+                }
+            }
+            
+            try {
+                const response = await fetch(`${RAW_CONTENT_BASE}/${filename}`);
+                const levelCode = await response.text();
+                console.log(levelCode);
+                
+                // Create a temporary environment to evaluate the level data
+                const levelData = new Function(`
+                    window = {};
+                    ${levelCode}
+                    return window.levelData;
+                `)();
+                
+                // Add download metadata
+                levelData.filename = filename;
+                levelData.dateDownloaded = new Date().toISOString();
+                levelData.originalCode = levelCode;
+                
+                // Store in IndexedDB
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction([STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(STORE_NAME);
+                    
+                    const request = store.put(levelData);
+                    request.onsuccess = () => {
+                        console.log(`Level ${filename} downloaded successfully`);
+                        updateLevelCard(filename);
+                        resolve(true);
+                    };
+                    request.onerror = () => {
+                        console.error('Error storing level:', request.error);
+                        reject(request.error);
+                    };
+                });
+            } catch (error) {
+                console.error('Error downloading level:', error);
+                alert('Failed to download level. Please try again.');
+                return false;
+            }
+        }
+
+        // // Delete Level
+        async function deleteLevel(filename) {
+            if (!db) {
+                try {
+                    await initDB();
+                } catch (error) {
+                    console.error('Failed to initialize database:', error);
+                    return false;
+                }
+            }
+            
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                
+                const request = store.delete(filename);
+                
+                request.onsuccess = () => {
+                    console.log(`Level ${filename} deleted successfully`);
+                    updateLevelCard(filename);
+                    resolve(true);
+                };
+                
+                request.onerror = () => {
+                    console.error('Error deleting level:', request.error);
+                    reject(request.error);
+                };
+            });
+        }
+
+        // ===== Checks =====
+        async function isLevelDownloaded(filename) {
+            if (!db) {
+                try {
+                    await initDB();
+                } catch (error) {
+                    console.error('Failed to initialize database:', error);
+                    return false;
+                }
+            }
+            
+            return new Promise((resolve) => {
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get(filename);
+                
+                request.onsuccess = () => {
+                    resolve(!!request.result);
+                };
+                
+                request.onerror = () => {
+                    console.error('Error checking level status:', request.error);
+                    resolve(false);
+                };
+            });
+        }
+
+        function updateLevelCard(filename) {
+            const card = document.querySelector(`[data-filename="${filename}"]`);
+            if (card) {
+                const downloadButton = card.querySelector('.download-button');
+                const deleteButton = card.querySelector('.delete-button');
+                
+                downloadButton.textContent = 'Downloaded';
+                downloadButton.classList.add('downloaded');
+                downloadButton.disabled = true;
+                downloadButton.onclick = null;
+                
+                deleteButton.classList.remove('hidden');
+            }
+        }
+
+        // ===== Level Display System =====
+        function displayLevels(levels) {
+            const levelGrid = document.getElementById('levelGrid');
+            
+            if (!levels || levels.length === 0) {
+                levelGrid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center;">
+                        No levels found.
+                    </div>`;
+                return;
+            }
+            
+            // Clear existing content
+            levelGrid.innerHTML = '';
+            
+            // Create and append level cards
+            levels.forEach(level => {
+                try {
+                    const card = createLevelCard(level);
+                    if (card) {
+                        levelGrid.appendChild(card);
+                    }
+                } catch (error) {
+                    console.error(`Error creating card for level ${level.filename}:`, error);
+                }
+            });
+            
+            // If no cards were successfully created
+            if (levelGrid.children.length === 0) {
+                levelGrid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center;">
+                        Error displaying levels. Please try again later.
+                    </div>`;
+            }
+        }
+
+        function createLevelCard(level) {
+            try {
+                if (!level || !level.matrix || !level.filename) {
+                    console.error('Invalid level data:', level);
+                    return null;
+                }
+                
+                const card = document.createElement('div');
+                card.className = 'level-card';
+                card.id = `card-${level.filename}`;
+                card.setAttribute('data-filename', level.filename);
+                
+                // Create preview canvas
+                const previewCanvas = document.createElement('canvas');
+                previewCanvas.className = 'level-preview';
+                previewCanvas.width = 200;
+                previewCanvas.height = 150;
+                
+                // Draw level preview
+                drawLevelPreview(previewCanvas, level);
+                
+                // Create level info section
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'level-info';
+                
+                const title = document.createElement('h3');
+                title.className = 'level-title';
+                title.textContent = level.title || level.filename.replace('.js', '');
+                
+                const author = document.createElement('p');
+                author.className = 'level-author';
+                author.textContent = level.author || 'Unknown Author';
+                
+                const stats = document.createElement('div');
+                stats.className = 'level-stats';
+                stats.innerHTML = `
+                    <span>Difficulty: ${level.difficulty || 'Normal'}</span>
+                    <span>Plays: ${level.plays || 0}</span>
+                `;
+                
+                // Create button container for download/delete buttons
+                const buttonContainer = document.createElement('div');
+                buttonContainer.className = 'button-container';
+                
+                // Create download button
+                const downloadBtn = document.createElement('button');
+                downloadBtn.className = 'download-button' + (level.isDownloaded ? ' downloaded' : '');
+                downloadBtn.textContent = level.isDownloaded ? 'Downloaded' : 'Download';
+                downloadBtn.onclick = level.isDownloaded ? null : () => downloadLevel(level.filename);
+                
+                // Create delete button (only shown for downloaded levels)
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-button' + (level.isDownloaded ? '' : ' hidden');
+                deleteBtn.textContent = '🗑️';
+                deleteBtn.title = 'Delete downloaded level';
+                deleteBtn.onclick = async () => {
+                    if (confirm(`Are you sure you want to delete "${level.title}"?`)) {
+                        try {
+                            await deleteLevel(level.filename);
+                            level.isDownloaded = false;
+                            downloadBtn.className = 'download-button';
+                            downloadBtn.textContent = 'Download';
+                            downloadBtn.onclick = () => downloadLevel(level.filename);
+                            deleteBtn.className = 'delete-button hidden';
+                        } catch (error) {
+                            console.error('Failed to delete level:', error);
+                            alert('Failed to delete level. Please try again.');
+                        }
+                    }
+                };
+                
+                // Assemble card
+                infoDiv.appendChild(title);
+                infoDiv.appendChild(author);
+                infoDiv.appendChild(stats);
+                
+                buttonContainer.appendChild(downloadBtn);
+                buttonContainer.appendChild(deleteBtn);
+                
+                card.appendChild(previewCanvas);
+                card.appendChild(infoDiv);
+                card.appendChild(buttonContainer);
+                
+                return card;
+            } catch (error) {
+                console.error(`Error creating card for level ${level?.filename}:`, error);
+                return null;
+            }
+        }
+
+        function getDifficultyFromMatrix(matrix) {
+            if (!matrix) return 'Normal';
+            
+            // Count special tiles (teleporters, spikes, etc.)
+            let specialTiles = 0;
+            let length = 0;
+            
+            for (let row of matrix) {
+                length = Math.max(length, row.length);
+                for (let tile of row) {
+                    if (tile > 1 && tile !== 4) { // 4 is the finish line
+                        specialTiles++;
+                    }
+                }
+            }
+            
+            // Calculate difficulty based on level length and special tiles
+            const density = specialTiles / (length * matrix.length);
+            
+            if (density < 0.02) return 'Easy';
+            if (density < 0.03) return 'Normal';
+            if (density < 0.05) return 'Hard';
+            if (density < 0.08) return 'Harder';
+            if (density < 0.09) return 'Expert';
+            if (density < 0.1) return 'Insane';
+            if (density < 0.3) return 'Extreme';
+            if (density < 0.7) return 'Easy Demon';
+            if (density < 0.8) return 'Medium Demon';
+            if (density < 9) return 'Super Demon';
+            return 'Impossible?';
+        }
+
+        // // ===== Level Preview System =====
+        const TILE_COLORS = {
+            '-5': '#1a1a2e', // Background
+            '0': '#000000',  // Empty
+            '1': '#4285F4',  // Platform (blue)
+            '2': '#ff0000',  // Spike (red)
+            '3': '#9932CC',  // Teleporter (purple)
+            '4': '#00ff00',  // Finish (green)
+        };
+
+        // // // Draw Spikes
+        function drawSpike(ctx, x, y, size) {
+            ctx.beginPath();
+            ctx.moveTo(x, y + size);  // Bottom center
+            ctx.lineTo(x + size, y + size);  // Bottom right
+            ctx.lineTo(x + size/2, y);  // Top center
+            ctx.closePath();
+            ctx.fillStyle = TILE_COLORS['2'];
+            ctx.fill();
+        }
+
+        // // // Draw Teleporters
+        function drawTeleporter(ctx, x, y, size) {
+            ctx.beginPath();
+            ctx.ellipse(x + size/2, y + size/2, size/2, size/3, 0, 0, Math.PI * 2);
+            ctx.fillStyle = TILE_COLORS['3'];
+            ctx.fill();
+        }
+
+        // // // Draw Finish Line
+        function drawFinishLine(ctx, x, y, size) {
+            ctx.fillStyle = TILE_COLORS['4'];
+            ctx.fillRect(x, y + size/4, size, size/2);
+        }
+
+        // // // Generate Level Preview
+        function generateLevelPreview(matrix) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.className = 'preview-canvas';
+
+            const TILE_SIZE = 10;
+            const PREVIEW_WIDTH = 20;
+            const PREVIEW_HEIGHT = 15;
+
+            canvas.width = PREVIEW_WIDTH * TILE_SIZE;
+            canvas.height = PREVIEW_HEIGHT * TILE_SIZE;
+
+            // Draw background
+            ctx.fillStyle = TILE_COLORS['-5'];
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw level tiles
+            for (let y = 0; y < Math.min(matrix.length, PREVIEW_HEIGHT); y++) {
+                for (let x = 0; x < Math.min(matrix[y].length, PREVIEW_WIDTH); x++) {
+                    const tile = matrix[y][x];
+                    const tileX = x * TILE_SIZE;
+                    const tileY = y * TILE_SIZE;
+
+                    switch(tile) {
+                        case 1: // Platform
+                            ctx.fillStyle = TILE_COLORS['1'];
+                            ctx.fillRect(tileX, tileY, TILE_SIZE, TILE_SIZE);
+                            break;
+                        case 2: // Spike
+                            drawSpike(ctx, tileX, tileY, TILE_SIZE);
+                            break;
+                        case 3: // Teleporter
+                            drawTeleporter(ctx, tileX, tileY, TILE_SIZE);
+                            break;
+                        case 4: // Finish line
+                            drawFinishLine(ctx, tileX, tileY, TILE_SIZE);
+                            break;
+                    }
+                }
+            }
+
+            return canvas;
+        }
+
+        function drawLevelPreview(canvas, level) {
+            const ctx = canvas.getContext('2d');
+            const matrix = level.matrix;
+
+            if (!matrix) return;
+
+            const TILE_SIZE = canvas.width / 20;
+            const PREVIEW_WIDTH = 20;
+            const PREVIEW_HEIGHT = 15;
+
+            // Draw background
+            ctx.fillStyle = TILE_COLORS['-5'];
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw level tiles
+            for (let y = 0; y < Math.min(matrix.length, PREVIEW_HEIGHT); y++) {
+                for (let x = 0; x < Math.min(matrix[y].length, PREVIEW_WIDTH); x++) {
+                    const tile = matrix[y][x];
+                    const tileX = x * TILE_SIZE;
+                    const tileY = y * TILE_SIZE;
+
+                    switch(tile) {
+                        case 1: // Platform
+                            ctx.fillStyle = TILE_COLORS['1'];
+                            ctx.fillRect(tileX, tileY, TILE_SIZE, TILE_SIZE);
+                            break;
+                        case 2: // Spike
+                            drawSpike(ctx, tileX, tileY, TILE_SIZE);
+                            break;
+                        case 3: // Teleporter
+                            drawTeleporter(ctx, tileX, tileY, TILE_SIZE);
+                            break;
+                        case 4: // Finish line
+                            drawFinishLine(ctx, tileX, tileY, TILE_SIZE);
+                            break;
+                    }
+                }
+            }
+        }
+
+        // ===== Search and Filter Levels =====
+        function searchLevels(query) {
+            const filtered = storeLevels.filter(level => 
+                level.title.toLowerCase().includes(query.toLowerCase())
+            );
+            displayLevels(filtered);
+        }
+        
+        function filterLevels(criteria) {
+            let filtered = [...storeLevels];
+            switch(criteria) {
+                case 'newest':
+                    filtered.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
+                    break;
+                case 'popular':
+                    filtered.sort((a, b) => b.plays - a.plays);
+                    break;
+                case 'difficulty':
+                    const difficultyOrder = {
+                        'Easy': 1,
+                        'Normal': 2,
+                        'Hard': 3,
+                        'Harder': 4,
+                        'Expert': 4,
+                        'Insane': 5,
+                        'Extreme': 6,
+                        'Easy Demon': 7,
+                        'Medium Demon': 8,
+                        'Super Demon': 9,
+                        'Impossible?': 10
+                    };
+                    filtered.sort((a, b) => 
+                        (difficultyOrder[a.difficulty] || 2) - (difficultyOrder[b.difficulty] || 2)
+                    );
+                    break;
+            }
+            displayLevels(filtered);
+        }
+
+        // Initialize database when page loads
+        window.onload = async () => {
+            try {
+                await initDB();
+                console.log('Database initialized');
+                // Load levels after database is initialized
+                await loadStoreLevels();
+                console.log('Levels loaded');
+            } catch (error) {
+                console.error('Failed to initialize:', error);
+                document.getElementById('levelGrid').innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; color: red;">
+                        Error initializing level store. Please try again later.
+                    </div>`;
+            }
+        };
+    </script>
+</body>
+</html>

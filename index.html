@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,63 +9,121 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
 
+        /* Base Styles */
+        :root {
+            --primary-color: #0F9D58;
+            --secondary-color: #4285F4;
+            --bg-dark: #1a1a2e;
+            --bg-darker: #16213e;
+            --bg-darkest: #182138;
+            --gradient: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            --shadow-glow: 0 0 20px var(--primary-color);
+            --transition-speed: 0.3s;
+            --menu-scale: 1;
+        }
+
         body {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: #1a1a2e;
+            margin: 0;
+            background-color: var(--bg-dark);
             color: white;
             font-family: 'Orbitron', sans-serif;
             overflow: hidden;
-            margin: 0;
         }
 
-        .menu, .options-menu, .level-selector {
+        /* Menu Containers */
+        .menu,
+        .options-menu,
+        .level-selector {
+            background-color: var(--bg-darker);
+            padding: clamp(20px, calc(30px * var(--menu-scale)), 60px);
+            border-radius: clamp(10px, calc(15px * var(--menu-scale)), 30px);
+            box-shadow: var(--shadow-glow);
             text-align: center;
-            background-color: #16213e;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 20px #0F9D58;
-            width: 300px;
             opacity: 1;
-            transition: opacity 0.5s ease-in-out;
+            transition: all 0.5s ease-in-out;
             visibility: visible;
+            transform: scale(var(--menu-scale));
         }
 
-        .fade-out {
-            opacity: 0;
-            visibility: hidden;
+        .menu,
+        .options-menu {
+            width: clamp(400px, calc(500px * var(--menu-scale)), 800px);
         }
 
-        .fade-in {
-            opacity: 1;
-            visibility: visible;
+        .level-selector {
+            width: clamp(500px, calc(90% * var(--menu-scale)), 1400px);
+            min-height: clamp(40vh, calc(60vh * var(--menu-scale)), 80vh);
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(var(--menu-scale));
+            background-color: var(--bg-darker);
+            padding: clamp(20px, calc(30px * var(--menu-scale)), 60px);
+            border-radius: clamp(10px, calc(15px * var(--menu-scale)), 30px);
+            box-shadow: var(--shadow-glow);
         }
 
-        h1, h2 {
-            color: #0F9D58;
-            text-shadow: 0 0 10px #0F9D58;
-        }
-
-        button {
-            display: block;
+        /* Container for level selectors */
+        .built-in-levels,
+        .online-levels {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            margin: 15px auto;
-            padding: 12px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            background: linear-gradient(45deg, #0F9D58, #4285F4);
-            border: 2px solid #0F9D58;
-            border-radius: 10px;
-            color: #16213e;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        /* Level display container */
+        .level-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            margin: 20px 0;
+        }
+
+        /* Headings */
+        h1 {
+            font-size: clamp(2rem, calc(2.5rem * var(--menu-scale)), 4rem);
+            margin: clamp(15px, calc(20px * var(--menu-scale)), 40px) 0;
+            color: var(--primary-color);
+            text-shadow: var(--shadow-glow);
+        }
+
+        h2 {
+            font-size: clamp(1.2rem, calc(1.5rem * var(--menu-scale)), 2.5rem);
+            margin: clamp(8px, calc(12px * var(--menu-scale)), 24px) 0;
+        }
+
+        /* Buttons */
+        button {
+            width: 100%;
+            margin: clamp(10px, calc(15px * var(--menu-scale)), 30px) auto;
+            padding: clamp(15px, calc(20px * var(--menu-scale)), 40px);
+            font-size: clamp(1.2rem, calc(1.5rem * var(--menu-scale)), 2.5rem);
+            background: var(--gradient);
+            border: clamp(2px, calc(3px * var(--menu-scale)), 6px) solid var(--primary-color);
+            border-radius: clamp(10px, calc(15px * var(--menu-scale)), 30px);
+            color: var(--bg-darker);
             font-weight: bold;
+            cursor: pointer;
             box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
-            transition: 0.3s;
+            transition: var(--transition-speed);
         }
 
         button:hover {
-            background: linear-gradient(45deg, #4285F4, #0F9D58);
+            background: linear-gradient(45deg, var(--secondary-color), var(--primary-color));
             transform: scale(1.05);
         }
 
@@ -73,109 +132,92 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
         }
 
-        select {
-            padding: 10px;
-            font-size: 1.2rem;
-            width: 100%;
-            background-color: #0F9D58;
-            color: #16213e;
-            border: 2px solid #0F9D58;
-            border-radius: 10px;
-        }
-
-        .level-selector {
-            text-align: center;
-
-            width: 80%;
-            max-width: 800px;
-            position: relative;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            min-height: 70vh;
-        }
-
+        /* Level Navigation */
         .level-navigation {
-            background-color: #182138;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-            position: relative;
-            box-shadow: 0 0 20px #0F9D58;
             display: flex;
             flex-direction: column;
-        }
-
-        .level-info {
-            text-align: center;
-            padding: 20px;
-            margin-bottom: 10px;
-        }
-
-        .nav-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2px;
-            margin-top: 20px;
-            height: 160px;
-        }
-
-        .nav-section {
-            position: relative;
-            height: 140px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .nav-button {
+            gap: 10px;
             width: 100%;
-            height: 90%;
-            background: linear-gradient(45deg, #0F9D58, #4285F4);
+            max-width: 400px;
+            margin: 20px auto;
+        }
+
+        .level-navigation button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            background: var(--gradient);
             border: none;
-            color: #182c22;
-            font-size: 40px;
+            border-radius: 10px;
+            color: var(--bg-darker);
+            font-weight: bold;
             cursor: pointer;
-            filter: drop-shadow(0 0 10px #0F9D58);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 0;
-            margin: 0;
-            opacity: 0.8;
-            transition: opacity 0.5s ease-in-out;
+            transition: transform 0.2s, background 0.2s;
+            font-family: 'Orbitron', sans-serif;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
         }
 
-        .nav-button:hover {
-            opacity: 1;
+        .level-navigation button:hover:not(:disabled) {
+            transform: scale(1.05);
+            background: linear-gradient(45deg, var(--secondary-color), var(--primary-color));
         }
 
-        .nav-button.prev::after {
-            content: '◀';
+        .level-navigation button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .level-navigation button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #666;
+        }
+
+        .nav-button.prev::before {
+            content: "←";
+            margin-right: 10px;
         }
 
         .nav-button.next::after {
-            content: '▶';
+            content: "→";
+            margin-left: 10px;
         }
 
-        .nav-button:hover {
-            transform: scale(1.07);
+        /* Level Info */
+        .level-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            color: white;
         }
 
-        .level-name {
-            font-size: 2em;
-            color: #0F9D58;
-            margin-bottom: 20px;
-            text-shadow: 0 0 10px rgba(15, 157, 88, 0.3);
+        .level-title {
+            font-size: 1.5rem;
+            margin: 0;
+            color: var(--primary-color);
         }
 
-        .difficulty {
-            font-size: 1.2em;
-            color: #4285F4;
-            margin: 10px 0;
+        .level-stats {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            font-size: 0.9rem;
+            color: #888;
         }
 
+        .level-preview {
+            width: 200px;
+            height: 150px;
+            background-color: var(--bg-darkest);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0 auto;
+            box-shadow: var(--shadow-glow);
+            image-rendering: pixelated;
+        }
+
+        /* Completion Bar */
         .completion {
             height: 8px;
             background: #333;
@@ -187,32 +229,57 @@
 
         .completion-fill {
             height: 100%;
-            background: linear-gradient(90deg, #0F9D58, #4285F4);
+            background: var(--gradient);
             border-radius: 4px;
             width: 0%;
-            transition: width 0.3s;
+            transition: width var(--transition-speed);
         }
 
+        /* Transitions */
+        .fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .fade-in {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Back Button */
         .back-button {
             align-self: flex-start;
             margin-top: auto;
             padding: 15px 30px;
             font-size: 1.2em;
-            background: linear-gradient(45deg, #0F9D58, #4285F4);
-            border: none;
-            border-radius: 10px;
-            color: #16213e;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 0 10px rgba(15, 157, 88, 0.3);
         }
 
-        .back-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 20px rgba(15, 157, 88, 0.5);
+        /* Error Messages */
+        .error-message {
+            background-color: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff0000;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .error-message button {
+            margin-top: 10px;
+            padding: 5px 15px;
+            background-color: #ff0000;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .error-message button:hover {
+            background-color: #cc0000;
         }
     </style>
 </head>
+
 <body>
     <!-- Background music -->
     <audio id="menu-music" loop preload="auto">
@@ -222,234 +289,529 @@
     <!-- Main Menu -->
     <div class="menu">
         <h1>Teleporter Dash</h1>
-        <button onclick="startGame()">Start Game</button>
-        <button onclick="openLevelEditor()">Level Editor</button>
-        <button onclick="openOptionsMenu()">Options</button>
-        <button onclick="showCredits()">Credits</button>
+        <button onclick="handleMenuTransition('menu', 'built-in-levels')">Levels</button>
+        <button onclick="handleMenuTransition('menu', 'online-levels')">Online Levels</button>
+        <button onclick="window.location.href='Levels/levelstore.html'">Level Store</button>
+        <button onclick="window.location.href='Level Editor/leveleditor.html'">Level Creator</button>
+        <button onclick="handleMenuTransition('menu', 'options-menu')">Settings</button>
+        <button onclick="showCredits();">Credits</button>
     </div>
 
-    <!-- Level Selector -->
-    <div class="level-selector" style="display: none;">
-        <h2>Select Level</h2>
-        <div class="level-grid">
-            <!-- Levels will be populated here by JavaScript -->
+    <!-- Built-in Levels -->
+    <div class="built-in-levels" style="display: none;">
+        <div class="level-selector">
+            <!-- Will be populated by loadBuiltInLevelRegistry() -->
         </div>
-        <button class="back-button" onclick="backToMenu()">Back to Menu</button>
+    </div>
+
+    <!-- Online Levels -->
+    <div class="online-levels" style="display: none;">
+        <div class="level-selector">
+            <!-- Will be populated by loadOnlineLevelRegistry() -->
+        </div>
     </div>
 
     <!-- Options Menu -->
     <div class="options-menu" style="display: none;">
-        <h2>Volume Control</h2>
+        <h1>Volume Control</h1>
         <input type="range" id="volume-slider" min="0" max="100" value="50" oninput="updateVolumeLabel()">
         <p>Volume: <span id="volume-label">50</span>%</p>
-        <button onclick="closeOptionsMenu()">Back</button>
+        <button onclick="handleMenuTransition('options-menu', 'menu')">Back</button>
     </div>
 
-    <script> 
-        document.getElementById('menu-music').loop = true;
-        document.getElementById('menu-music').volume = 0.9;
-        document.getElementById('menu-music').preload = 'auto';
-        
-        window.addEventListener('click', function() {
-            document.getElementById('menu-music').play();
-        }, { once: true });
+    <script>
+        // ===== Menu Navigation System =====
+        /**
+         * Handles the transition animation between two menus
+         * @param {Element} fromMenu - The menu to transition from
+         * @param {Element} toMenu - The menu to transition to
+         */
+        async function transitionMenu(fromMenu, toMenu) {
+            return new Promise((resolve) => {
+                if (fromMenu) {
+                    fromMenu.classList.add('fade-out');
+                    setTimeout(() => {
+                        fromMenu.style.display = "none";
+                        if (toMenu) {
+                            toMenu.style.display = "block";
+                            setTimeout(() => {
+                                toMenu.classList.remove('fade-out');
+                                resolve();
+                            }, 50);
+                        } else {
+                            resolve();
+                        }
+                    }, 500);
+                } else if (toMenu) {
+                    toMenu.style.display = "block";
+                    setTimeout(() => {
+                        toMenu.classList.remove('fade-out');
+                        resolve();
+                    }, 50);
+                }
+            });
+        }
 
+        /**
+         * Simplified menu transition handler using menu IDs
+         * @param {string} from - ID of the menu to transition from
+         * @param {string} to - ID of the menu to transition to
+         */
+        async function handleMenuTransition(from, to) {
+            const fromMenu = document.querySelector('.' + from);
+            const toMenu = document.querySelector('.' + to);
+
+            // Special handling for specific menus
+            if (to === 'built-in-levels') {
+                await loadBuiltInLevelRegistry();
+            } else if (to === 'online-levels') {
+                await loadOnlineLevelRegistry();
+            }
+
+            await transitionMenu(fromMenu, toMenu);
+        }
+
+        // ===== Audio Setup =====
+        const menuMusic = document.getElementById('menu-music');
+        menuMusic.loop = true;
+        menuMusic.volume = 0.9;
+        menuMusic.preload = 'auto';
+
+        // Start playing music on first click
+        window.addEventListener('click', () => menuMusic.play(), { once: true });
+
+
+        // Track loading states
+        let levelsLoaded = false;
+        let cssLoaded = false;
+
+        // Check if fonts are loaded
+        document.fonts.ready.then(() => {
+            cssLoaded = true;
+        });
+
+        // ===== Navigation Functions =====
+        // "Play"
         function startGame() {
-            const menu = document.querySelector(".menu");
-            const levelSelector = document.querySelector(".level-selector");
-            
-            menu.classList.add('fade-out');
-            setTimeout(() => {
-                menu.style.display = "none";
-                levelSelector.style.display = "block";
-                // Small delay before fade in
-                setTimeout(() => {
-                    levelSelector.classList.remove('fade-out');
-                }, 50);
-            }, 500);
+            console.log(currentLevelType);
+            if (currentLevelType === 'built-in' && window.builtInLevels) {
+                const level = window.builtInLevels[currentLevelIndex];
+
+                window.location.href = `Levels/gameloader.html?level=${level.number}`;
+            } else if (currentLevelType === 'online' && window.downloadedLevels) {
+                const level = window.downloadedLevels[currentLevelIndex];
+                window.location.href = `Levels/gameloader.html?online=true&levelFile=${encodeURIComponent(level.filename)}`;
+            }
+            transitionMenu(
+                document.querySelector(".menu"),
+                document.querySelector(".level-selector")
+            );
         }
 
-        function beginLevel() {
-            const level = document.getElementById("level-select").value;
-            const levelNumber = level.replace("level", "");
-            window.location.href = `Levels/gameloader.html?level=${levelNumber}`;
+        // "Level Editor"
+        function openLevelEditor() {
+            window.location.href = "Level Editor/leveleditor.html";
         }
 
-        function backToMenu() {
-            const menu = document.querySelector(".menu");
-            const levelSelector = document.querySelector(".level-selector");
-            
-            levelSelector.classList.add('fade-out');
-            setTimeout(() => {
-                levelSelector.style.display = "none";
-                menu.style.display = "block";
-                // Small delay before fade in
-                setTimeout(() => {
-                    menu.classList.remove('fade-out');
-                }, 50);
-            }, 500);
-        }
-
-        function openOptionsMenu() {
-            const menu = document.querySelector(".menu");
-            const optionsMenu = document.querySelector(".options-menu");
-            
-            menu.classList.add('fade-out');
-            setTimeout(() => {
-                menu.style.display = "none";
-                optionsMenu.style.display = "block";
-                // Small delay before fade in
-                setTimeout(() => {
-                    optionsMenu.classList.remove('fade-out');
-                }, 50);
-            }, 500);
-        }
-
-        function closeOptionsMenu() {
-            const menu = document.querySelector(".menu");
-            const optionsMenu = document.querySelector(".options-menu");
-            
-            optionsMenu.classList.add('fade-out');
-            setTimeout(() => {
-                optionsMenu.style.display = "none";
-                menu.style.display = "block";
-                // Small delay before fade in
-                setTimeout(() => {
-                    menu.classList.remove('fade-out');
-                }, 50);
-            }, 500);
-        }
-
+        // "Credits"
         function showCredits() {
             alert("Credits to RobTopGames for the original game and music! \nCredits to ForeverBound, DJVI, and Step for the amazing original Geometry Dash music!");
         }
 
+        // "Level Store"
+        function levelStore() {
+            window.location.href = 'Levels/levelstore.html';
+        }
+
+        // ===== Settings Functions =====
         function updateVolumeLabel() {
             const volume = document.getElementById("volume-slider").value;
             document.getElementById("volume-label").innerText = volume;
-            document.getElementById("menu-music").volume = volume / 100;
+            menuMusic.volume = volume / 100;
         }
 
-        function openLevelEditor() {
-            window.location.href = "Level Editor/leveleditor.html";
-        }
-        
+
+        // ===== Level System =====
         let currentLevelIndex = 0;
-        let levels = [];
+        let maxLevelIndex = 0;
+        let loadingStarted = false;
+        let currentLevelType = 'built-in'; // Track whether we're in built-in or online levels
 
-        function createLevelCard(level, isLocked = false) {
-            const card = document.createElement('div');
-            card.className = 'level-info';
-            
-            const completion = localStorage.getItem(`level${level.id}_completion`) || 0;
-            
-            if (isLocked) {
-                card.innerHTML = `
-                    <div class="level-name">Level ${level.id}</div>
-                    <div class="difficulty">Complete previous level to unlock</div>
-                `;
-            } else {
-                card.innerHTML = `
-                    <div class="level-name">${level.title}</div>
-                    <div class="difficulty">Difficulty: ${level.difficulty}</div>
-                    <div class="completion">
-                        <div class="completion-fill" style="width: ${completion}%"></div>
-                    </div>
-                `;
-                card.addEventListener('click', () => {
-                    window.location.href = `Levels/gameloader.html?level=${level.id}`;
-                });
-            }
+        let db;
+        const DB_NAME = 'TeleporterDashDB';
+        const DB_VERSION = 2;
+        const STORE_NAME = 'downloadedLevels';
 
-            return card;
-        }
+        // // Initialize IndexedDB
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-        function loadLevelRegistry() {
-            const levelSelector = document.querySelector('.level-selector');
-            levelSelector.innerHTML = `
-                <h2>Select Level</h2>
-                <div class="level-navigation">
-                    <div id="current-level"></div>
-                    <div class="nav-buttons">
-                        <div class="nav-section">
-                            <button class="nav-button prev" onclick="showPreviousLevel()"></button>
-                        </div>
-                        <div class="nav-section">
-                            <button class="nav-button next" onclick="showNextLevel()"></button>
-                        </div>
-                    </div>
-                </div>
-                <button class="back-button" onclick="backToMenu()">Back to Menu</button>
-            `;
+                request.onerror = () => {
+                    console.error('Failed to open database:', request.error);
+                    reject(request.error);
+                };
 
-            function loadLevelFile(levelNumber) {
-                return new Promise((resolve) => {
-                    const script = document.createElement('script');
-                    script.src = `Levels/level${levelNumber}.js`;
-                    script.onload = () => {
-                        const latestLevel = window.levelRegistry[window.levelRegistry.length - 1];
-                        if (latestLevel) {
-                            const previousLevelCompleted = levelNumber === 1 || 
-                                (localStorage.getItem(`level${levelNumber-1}_completion`) >= 100);
-                            const isLocked = levelNumber > 1 && !previousLevelCompleted;
-                            
-                            levels.push({
-                                level: latestLevel,
-                                isLocked: isLocked
-                            });
-                        }
-                        resolve();
-                    };
-                    script.onerror = () => resolve();
-                    document.body.appendChild(script);
-                });
-            }
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    console.log('Database opened successfully');
+                    resolve(db);
+                };
 
-            // Load all levels
-            const loadPromises = [];
-            for (let i = 1; i <= 500; i++) {
-                loadPromises.push(loadLevelFile(i));
-            }
-
-            Promise.all(loadPromises).then(() => {
-                showLevel(0);
-                updateNavigationButtons();
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'filename' });
+                        console.log('Object store created');
+                    }
+                };
             });
         }
 
-        function showLevel(index) {
-            if (index >= 0 && index < levels.length) {
-                currentLevelIndex = index;
-                const levelContainer = document.getElementById('current-level');
-                levelContainer.innerHTML = '';
-                levelContainer.appendChild(createLevelCard(levels[index].level, levels[index].isLocked));
-                updateNavigationButtons();
+        // ===== Levels =====
+        // // Get levels from IndexedDB
+        async function getDownloadedLevels() {
+            if (!db) {
+                try {
+                    await initDB();
+                } catch (error) {
+                    console.error('Failed to initialize database:', error);
+                    return [];
+                }
+            }
+
+            return new Promise((resolve, reject) => {
+                try {
+                    const transaction = db.transaction([STORE_NAME], 'readonly');
+                    const store = transaction.objectStore(STORE_NAME);
+                    const request = store.getAll();
+
+                    request.onsuccess = () => {
+                        resolve(request.result || []);
+                    };
+
+                    request.onerror = () => {
+                        console.error('Error fetching downloaded levels:', request.error);
+                        reject(request.error);
+                    };
+                } catch (error) {
+                    console.error('Error in transaction:', error);
+                    reject(error);
+                }
+            });
+        }
+
+        const BUILT_IN_LEVELS = [
+            { filename: 'level1.js', number: 1 },
+            { filename: 'level2.js', number: 2 },
+            { filename: 'level3.js', number: 3 }
+        ];
+
+        async function scanForLevels() {
+            return BUILT_IN_LEVELS;
+        }
+
+        // // Load Levels from Registries
+        async function loadBuiltInLevelRegistry() {
+            loadingStarted = true;
+            currentLevelType = 'built-in';
+            const levelSelector = document.querySelector('.built-in-levels .level-selector');
+            levelSelector.innerHTML = `
+                <h1>Select Level</h1>
+                <div class="level-display">
+                    <div class="level-preview"></div>
+                    <div class="level-info"></div>
+                    <div class="level-navigation">
+                        <button class="nav-button prev" onclick="handleLevelNavigation(-1)">Previous</button>
+                        <button onclick="startGame()">Play Level</button>
+                        <button class="nav-button next" onclick="handleLevelNavigation(1)">Next</button>
+                    </div>
+                </div>
+                <button class="back-button" onclick="handleMenuTransition('built-in-levels', 'menu')">Back to Menu</button>
+            `;
+
+            const levels = await scanForLevels();
+            window.builtInLevels = levels;
+            currentLevelIndex = 0;
+            maxLevelIndex = levels.length - 1;
+            await updateLevelDisplay();
+        }
+
+        async function loadOnlineLevelRegistry() {
+            currentLevelType = 'online';
+            const levelSelector = document.querySelector('.online-levels .level-selector');
+            levelSelector.innerHTML = `
+                <h1>Downloaded Levels</h1>
+                <div class="level-display">
+                    <div class="level-preview"></div>
+                    <div class="level-info"></div>
+                    <div class="level-navigation">
+                        <button class="nav-button prev" onclick="handleLevelNavigation(-1)">Previous</button>
+                        <button onclick="startGame()">Play Level</button>
+                        <button class="nav-button next" onclick="handleLevelNavigation(1)">Next</button>
+                    </div>
+                </div>
+                <button class="back-button" onclick="handleMenuTransition('online-levels', 'menu')">Back to Menu</button>
+            `;
+
+            try {
+                const levels = await getDownloadedLevels();
+                if (levels.length === 0) {
+                    const levelDisplay = document.querySelector('.online-levels .level-display');
+                    levelDisplay.innerHTML = '<p class="no-levels">No downloaded levels found.<br>Visit the Level Store to download levels!</p>';
+                    return;
+                }
+                window.downloadedLevels = levels;
+                currentLevelIndex = 0;
+                maxLevelIndex = levels.length - 1;
+                await updateLevelDisplay();
+            } catch (error) {
+                console.error('Error loading downloaded levels:', error);
+                const levelDisplay = document.querySelector('.online-levels .level-display');
+                levelDisplay.innerHTML = '<p class="error-message">Error loading levels.<br>Please try again later.</p>';
             }
         }
 
-        function showNextLevel() {
-            if (currentLevelIndex < levels.length - 1) {
-                showLevel(currentLevelIndex + 1);
-                
+        // // Level Navigation Direction Handler
+        async function handleLevelNavigation(direction) {
+            const newIndex = currentLevelIndex + direction;
+
+            if (newIndex >= 0 && newIndex <= maxLevelIndex) {
+                currentLevelIndex = newIndex;
+                await updateLevelDisplay();
             }
         }
 
-        function showPreviousLevel() {
-            if (currentLevelIndex > 0) {
-                showLevel(currentLevelIndex - 1);
+        // ===== Level Preview System =====
+
+        // // Colors
+        const TILE_COLORS = {
+            '-5': '#1a1a2e', // Background
+            '0': '#000000',  // Empty
+            '1': '#4285F4',  // Platform (blue)
+            '2': '#ff0000',  // Spike (red)
+            '3': '#9932CC',  // Teleporter (purple)
+            '4': '#00ff00',  // Finish (green)
+        };
+
+        // // Drawing Functions
+        function drawSpike(ctx, x, y, size) {
+            ctx.beginPath();
+            ctx.moveTo(x, y + size);
+            ctx.lineTo(x + size / 2, y);
+            ctx.lineTo(x + size, y + size);
+            ctx.closePath();
+            ctx.fillStyle = TILE_COLORS['2'];
+            ctx.fill();
+        }
+
+        function drawTeleporter(ctx, x, y, size) {
+            ctx.fillStyle = TILE_COLORS['3'];
+            ctx.fillRect(x, y, size, size);
+        }
+
+        function drawFinishLine(ctx, x, y, size) {
+            ctx.fillStyle = TILE_COLORS['4'];
+            ctx.fillRect(x, y, size, size);
+        }
+
+        function generateLevelPreview(matrix) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 200;
+            canvas.height = 150;
+            const ctx = canvas.getContext('2d');
+
+            // Get 20x17 preview section
+            const previewRows = Math.min(20, matrix.length);
+            const previewCols = Math.min(17, matrix[0].length);
+
+            // Calculate tile size for the 20x17 grid
+            const tileSize = Math.min(
+                canvas.width / previewCols,
+                canvas.height / previewRows
+            );
+
+            // Center the preview
+            const offsetX = (canvas.width - (previewCols * tileSize)) / 2;
+            const offsetY = (canvas.height - (previewRows * tileSize)) / 2;
+
+            // Draw background
+            ctx.fillStyle = TILE_COLORS['-5'];
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw level tiles (only first 10x10)
+            for (let y = 0; y < previewRows; y++) {
+                for (let x = 0; x < previewCols; x++) {
+                    const tileX = offsetX + (x * tileSize);
+                    const tileY = offsetY + (y * tileSize);
+                    const tile = matrix[y][x];
+
+                    if (tile === 1) {
+                        ctx.fillStyle = TILE_COLORS['1'];
+                        ctx.fillRect(tileX, tileY, tileSize, tileSize);
+                    } else if (tile === 2) {
+                        drawSpike(ctx, tileX, tileY, tileSize);
+                    } else if (tile === 3) {
+                        drawTeleporter(ctx, tileX, tileY, tileSize);
+                    } else if (tile === 4) {
+                        drawFinishLine(ctx, tileX, tileY, tileSize);
+                    }
+                }
+            }
+
+            return canvas;
+        }
+
+        // // Draw complete level preview
+        function drawLevelPreview(level) {
+            if (!level || !level.matrix) {
+                console.error('Invalid level data for preview:', level);
+                return null;
+            }
+
+            try {
+                return generateLevelPreview(level.matrix);
+            } catch (error) {
+                console.error('Error generating level preview:', error);
+                return null;
             }
         }
 
-        function updateNavigationButtons() {
-            const prevButton = document.querySelector('.nav-button.prev');
-            const nextButton = document.querySelector('.nav-button.next');
-            
-            prevButton.style.visibility = currentLevelIndex > 0 ? 'visible' : 'hidden';
-            nextButton.style.visibility = currentLevelIndex < levels.length - 1 ? 'visible' : 'hidden';
+        async function updateLevelDisplay() {
+            const container = document.querySelector(
+                currentLevelType === 'built-in' ?
+                    '.built-in-levels .level-selector' :
+                    '.online-levels .level-selector'
+            );
+            if (!container) return;
+
+            const levelDisplay = container.querySelector('.level-display');
+            if (!levelDisplay) {
+                container.innerHTML = `
+                    <h1>${currentLevelType === 'built-in' ? 'Select Level' : 'Downloaded Levels'}</h1>
+                    <div class="level-display">
+                        <div class="level-preview"></div>
+                        <div class="level-info"></div>
+                        <div class="level-navigation">
+                            <button class="nav-button prev" onclick="handleLevelNavigation(-1)">Previous</button>
+                            <button onclick="startGame()">Play Level</button>
+                            <button class="nav-button next" onclick="handleLevelNavigation(1)">Next</button>
+                        </div>
+                    </div>
+                    <button class="back-button" onclick="handleMenuTransition('${currentLevelType === 'built-in' ? 'built-in-levels' : 'online-levels'}', 'menu')">Back to Menu</button>
+                `;
+            }
+
+            try {
+                // Get current level data
+                let levelData;
+                if (currentLevelType === 'built-in') {
+                    const script = document.createElement('script');
+                    script.src = `Levels/${BUILT_IN_LEVELS[currentLevelIndex].filename}`;
+
+                    await new Promise((resolve, reject) => {
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+
+                    levelData = window.levelData;
+                    document.head.removeChild(script);
+                    window.levelData = null;
+                } else {
+                    levelData = window.downloadedLevels[currentLevelIndex];
+                }
+
+                if (!levelData) throw new Error('No level data found');
+
+                // Create preview
+                const preview = container.querySelector('.level-preview');
+                preview.innerHTML = '';
+                const previewCanvas = drawLevelPreview(levelData);
+                if (previewCanvas) {
+                    preview.appendChild(previewCanvas);
+                }
+
+                // Create level info
+                const info = container.querySelector('.level-info');
+                info.innerHTML = '';
+
+                const title = document.createElement('h3');
+                title.className = 'level-title';
+                title.textContent = levelData.title ||
+                    (currentLevelType === 'built-in' ?
+                        `Level ${BUILT_IN_LEVELS[currentLevelIndex].number}` :
+                        levelData.filename.replace('.js', '')
+                    );
+
+                const stats = document.createElement('div');
+                stats.className = 'level-stats';
+                stats.innerHTML = `
+                    <span>Difficulty: ${levelData.difficulty || 'Normal'}</span>
+                    <span>Author: ${levelData.author || 'Unknown'}</span>
+                `;
+
+                info.appendChild(title);
+                info.appendChild(stats);
+
+                // Update navigation buttons
+                const prevButton = container.querySelector('.nav-button.prev');
+                const nextButton = container.querySelector('.nav-button.next');
+
+                if (prevButton) prevButton.disabled = currentLevelIndex === 0;
+                if (nextButton) nextButton.disabled = currentLevelIndex === maxLevelIndex;
+
+            } catch (error) {
+                console.error('Error updating level display:', error);
+                showLoadingError('Failed to load level data', currentLevelType === 'built-in');
+            }
         }
 
-        // Call this when the page loads
-        window.addEventListener('load', loadLevelRegistry);
+
+        //===== Error Handling =====
+        function showError(message, container) {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            errorElement.innerHTML = `
+                <p>${message}</p>
+                <button onclick="this.parentElement.remove()">OK</button>
+            `;
+            container.appendChild(errorElement);
+        }
+
+        function showLoadingError(message, isBuiltIn = false) {
+            const container = document.querySelector(
+                isBuiltIn ? '.built-in-levels #current-level' : '.online-levels #current-level'
+            );
+            if (container) {
+                container.innerHTML = `<p>${message}</p>`;
+            }
+        }
+
+        // ===== Other =====
+
+        // // Initialize database when page loads
+        document.addEventListener('DOMContentLoaded', initDB);
+
+        // Add resize handler
+        function updateMenuScale() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const smallestDimension = Math.min(width, height);
+
+            // Calculate scale based on screen size, with a larger base size
+            let scale = smallestDimension / 800;
+            scale = Math.max(0.8, Math.min(scale, 2.0));
+
+            document.documentElement.style.setProperty('--menu-scale', scale);
+        }
+
+        // Initial scale setup
+        updateMenuScale();
+
+        // Update scale on window resize
+        window.addEventListener('resize', updateMenuScale);
     </script>
 </body>
+
 </html>

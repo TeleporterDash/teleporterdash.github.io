@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Teleporter Dash Level Editor</title>
+    <title>Teleporter Dash Level Creator</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
 
@@ -107,9 +107,33 @@
         .control-group select {
             padding: 8px;
             border-radius: 5px;
-            border: 1px solid #333;
-            background: #222;
-            color: white;
+            border: 1px solid #4285F4;
+            background: #1a1a1a;
+            color: #ffffff;
+            font-family: 'Orbitron', sans-serif;
+            caret-color: #4285F4;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .control-group input:focus,
+        .control-group select:focus {
+            border-color: #0F9D58;
+            box-shadow: 0 0 5px rgba(15, 157, 88, 0.5);
+        }
+
+        .control-group input::placeholder {
+            color: #666;
+            opacity: 1;
+        }
+
+        .control-group select {
+            cursor: pointer;
+        }
+
+        .control-group select option {
+            background: #1a1a1a;
+            color: #ffffff;
         }
 
         .tool-group {
@@ -208,7 +232,7 @@
     </style>
 </head>
 <body>
-    <h1 class="header">Teleporter Dash Level Editor</h1>
+    <h1 class="header">Teleporter Dash Level Creator</h1>
     <div id="editorContainer">
         <div id="gridContainer">
             <div id="grid"></div>
@@ -216,9 +240,27 @@
         <div id="editorControls">
             <div class="control-group">
                 <label for="levelName">Level Name:</label>
-                <input type="text" id="levelName" placeholder="Untitled Level">
+                <input type="text" id="levelName" placeholder="Enter level name">
             </div>
-            
+            <div class="control-group">
+                <label for="authorName">Author:</label>
+                <input type="text" id="authorName" placeholder="Enter author name">
+            </div>
+            <div class="control-group">
+                <label for="difficulty">Difficulty:</label>
+                <select id="difficulty">
+                    <option value="Easy">Easy</option>
+                    <option value="Normal">Normal</option>
+                    <option value="Hard">Hard</option>
+                    <option value="Harder">Harder</option>
+                    <option value="Expert">Expert</option>
+                    <option value="Insane">Insane</option>
+                    <option value="Extreme">Extreme</option>
+                    <option value="Easy Demon">Easy Demon</option>
+                    <option value="Medium Demon">Medium Demon</option>
+                    <option value="Super Demon">Super Demon</option>
+                </select>
+            </div>
             <div class="control-group">
                 <label for="musicSelect">Background Music:</label>
                 <select id="musicSelect">
@@ -230,7 +272,7 @@
                     <option value="custom">Custom Music...</option>
                 </select>
                 <input type="file" id="customMusicInput" accept="audio/*" style="display: none;">
-    <button id="previewMusic">Preview Music</button>
+                <button id="previewMusic">Preview Music</button>
             </div>
 
             <div class="control-group">
@@ -303,7 +345,7 @@
         let currentTool = '0';
         let isMouseDown = false;
 
-        // Add these variables at the top with other declarations
+        // Custom Music
         let customMusicFile = null;
         const customMusicInput = document.getElementById('customMusicInput');
 
@@ -496,18 +538,18 @@
 
         // Add this function to get the full music path
         function getMusicPath(musicValue) {
-            if (!musicValue) return '../Sound/Level Soundtracks/level1.mp3';
-            
-            if (musicValue === 'custom' && customMusicFile) {
-                return URL.createObjectURL(customMusicFile);
+            if (musicValue === 'custom') {
+                const file = customMusicInput.files[0];
+                console.log('Custom music file:', file);
+                if (file) {
+                    // For custom music, we'll save it to the proper soundtrack directory
+                    return `../Sound/Level Soundtracks/${file.name}`;
+                }
+            } else {
+                // For built-in music, return the proper path
+                return `../Sound/Level Soundtracks/${musicValue}`;
             }
-            
-            // If it's not a full path, add the directory
-            if (!musicValue.includes('/')) {
-                return '../Sound/Level Soundtracks/' + musicValue;
-            }
-            
-            return musicValue;
+            return '../Sound/Level Soundtracks/level1.mp3'; // Default fallback
         }
 
         // Update the preview music functionality
@@ -541,42 +583,41 @@
         // Update the export button handler to include proper color transition settings
         exportBtn.addEventListener('click', () => {
             const levelName = levelNameInput.value || 'Untitled Level';
-            let musicFile = musicSelect.value;
+            const authorName = document.getElementById('authorName').value || 'Unknown Author';
+            const difficulty = document.getElementById('difficulty').value || 'Normal';
+            const musicPath = getMusicPath(musicSelect.value);
             const levelId = getNextLevelId();
             const zip = new JSZip();
             
-            // Create level file content with registry data included
+            // Create level file content
             const jsContent = `// Level ${levelId}: ${levelName}
 window.levelData = {
     id: ${levelId},
     title: "${levelName}",
+    author: "${authorName}",
+    difficulty: "${difficulty}",
     matrix: ${JSON.stringify(levelMatrix, null, 4)},
-    music: "${musicFile}",
+    music: "${musicPath}",
     colorTransitionDuration: 0.5, 
     colorTransitionDelay: 0.1    
-};
-
-// Registry entry for this level
-window.levelRegistry = window.levelRegistry || [];
-window.levelRegistry.push({
-    id: ${levelId},
-    title: "${levelName}",
-    difficulty: 'custom'
-});`;
+};`;
 
             // Add files to zip
             zip.file(`Levels/level${levelId}.js`, jsContent);
             
-            if (musicSelect.value === 'custom' && customMusicFile) {
-                musicFile = 'custom_' + customMusicFile.name;
-                zip.file('Sound/Level Soundtracks/' + musicFile, customMusicFile);
+            // If using custom music, add it to the zip
+            if (musicSelect.value === 'custom' && customMusicInput.files[0]) {
+                const musicFile = customMusicInput.files[0];
+                zip.file(`Sound/Level Soundtracks/${musicFile.name}`, musicFile);
             }
 
             // Create README content
             const readmeContent = [
                 `Level: ${levelName}`,
+                `Author: ${authorName}`,
+                `Difficulty: ${difficulty}`,
                 `Level ID: ${levelId}`,
-                `Music File Required: ${musicFile}`,
+                `Music File Required: ${musicPath}`,
                 ``,
                 `Setup Instructions:`,
                 `1. Extract all files from this zip`,
@@ -603,6 +644,12 @@ window.levelRegistry.push({
             // After successful export, save the current state
             lastExportedMatrix = JSON.parse(JSON.stringify(levelMatrix));
             hasUnsavedChanges = false;
+
+            alert('You will be redirected to a Google Form to submit your level in a few seconds.');
+            setTimeout(() => {
+            window.location.href = 'https://forms.gle/2hGA3QKpQmN2akA99';
+            }, 3000);
+
         });
 
         // Add this for handling custom music file selection
@@ -674,6 +721,8 @@ window.levelRegistry.push({
             const testData = {
                 matrix: sanitizeMatrix(JSON.parse(JSON.stringify(levelMatrix))),
                 name: levelNameInput.value || 'Test Level',
+                author: document.getElementById('authorName').value || 'Unknown Author',
+                difficulty: document.getElementById('difficulty').value || 'Normal',
                 music: getMusicPath(musicSelect.value),
                 id: 'test',
                 colorTransitionDuration: 2.0,  // Increased for stability
@@ -753,6 +802,21 @@ window.levelRegistry.push({
                                     document.getElementById('levelName').value = levelData.title;
                                 }
                                 
+                                // Update author name if available
+                                if (levelData.author) {
+                                    document.getElementById('authorName').value = levelData.author;
+                                }
+                                
+                                // Update difficulty if available
+                                if (levelData.difficulty) {
+                                    const difficultySelect = document.getElementById('difficulty');
+                                    Array.from(difficultySelect.options).forEach(option => {
+                                        if (option.value === levelData.difficulty) {
+                                            option.selected = true;
+                                        }
+                                    });
+                                }
+                                
                                 // Update music selection if available
                                 if (levelData.music) {
                                     const musicPath = levelData.music.split('/').pop();
@@ -822,4 +886,4 @@ window.levelRegistry.push({
         });
     </script>
 </body>
-</html> 
+</html>
