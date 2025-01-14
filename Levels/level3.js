@@ -1,9 +1,9 @@
-// Level 3 - Strange Teleporters
+// Level 3: Level 3 - Strange Teleporters
 window.levelData = {
     id: 3,
-    author: "NellowTCS",    // Creator of the level
-    difficulty: "Hard",
     title: "Level 3 - Strange Teleporters",
+    author: "NellowTCS",
+    difficulty: "Hard",
     matrix: [
     [
         -3,
@@ -455,7 +455,7 @@ window.levelData = {
         1,
         1,
         1,
-        1,
+        2,
         2,
         2,
         2,
@@ -704,11 +704,11 @@ window.levelData = {
         0,
         0,
         0,
-        0,
         1,
         1,
         1,
         2,
+        0,
         0,
         0,
         0,
@@ -957,10 +957,10 @@ window.levelData = {
         0,
         0,
         0,
-        0,
         1,
         1,
         2,
+        0,
         0,
         0,
         0,
@@ -1210,9 +1210,9 @@ window.levelData = {
         0,
         0,
         0,
-        0,
         1,
         2,
+        0,
         0,
         0,
         0,

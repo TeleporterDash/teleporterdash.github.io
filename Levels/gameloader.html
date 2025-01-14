@@ -496,6 +496,45 @@
             });
         }
 
+        async function loadTestLevel() {
+            const dbName = 'LevelEditorDB';
+            const testStore = 'testLevel';
+            
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(dbName, 1);
+                
+                request.onerror = () => reject(new Error('Failed to open database'));
+                
+                request.onsuccess = (event) => {
+                    const db = event.target.result;
+                    const transaction = db.transaction([testStore], 'readonly');
+                    const store = transaction.objectStore(testStore);
+                    const getRequest = store.get('currentTest');
+                    
+                    getRequest.onsuccess = () => {
+                        const testData = getRequest.result;
+                        if (testData) {
+                            resolve({
+                                matrix: testData.matrix,
+                                title: 'Test Level',
+                                author: testData.author,
+                                difficulty: testData.difficulty,
+                                musicValue: testData.musicValue,
+                                musicData: testData.musicData,
+                                id: 'test',
+                                colorTransitionDuration: 2.0,
+                                colorTransitionDelay: 0.2
+                            });
+                        } else {
+                            reject(new Error('No test level found'));
+                        }
+                    };
+                    
+                    getRequest.onerror = () => reject(new Error('Failed to load test level'));
+                };
+            });
+        }
+
         /**
        * Initializes level data either from a test level or from a level file
        * Returns a Promise that resolves when level data is loaded
@@ -508,8 +547,9 @@
                     // Test level from the editor
                     if (urlParams.has('test') && urlParams.get('test') === 'true') {
                         console.log('Loading test level from editor');
-                        const testData = JSON.parse(decodeURIComponent(urlParams.get('data')));
+                        const testData = await loadTestLevel();
                         await processLevelData(testData);
+                        updateGame(); // Start the game after loading test level
                         resolve();
                         return;
                     }
@@ -613,12 +653,23 @@
 
             // Set other level data
             levelTitle = data.title || 'Untitled Level';
-            levelMusic = data.music;
+            levelAuthor = data.author || 'Unknown Author';
+            levelDifficulty = data.difficulty || 'Normal';
+            
+            // Handle music data
+            if (data.musicValue === 'custom' && data.musicData) {
+                // Create a blob from the array buffer
+                const blob = new Blob([data.musicData.data], { type: data.musicData.type });
+                levelMusic = URL.createObjectURL(blob);
+            } else {
+                levelMusic = `../Sound/Level Soundtracks/${data.musicValue}`;
+            }
+
             levelId = data.id;
             document.title = levelTitle;
 
             // Initialize game systems
-            setupAudio();
+            // (now in StartButton) > setupAudio();
             calculateTotalBlocks();
 
             // Reset game state
@@ -643,14 +694,14 @@
             document.getElementById('cameraContainer').style.transform = 'translateY(0)';
         }
 
-        // Game constants to avoid magic numbers
+        // ===== Variables =====
         const CONSTANTS = {
             COLUMN_WIDTH: 40,       // Width of each column in the level matrix
             GROUND_HEIGHT: 50,      // Height of the ground from bottom of container
         };
 
 
-        // Game state variables
+            // // Game state variables
         let isJumping = false;                      // Whether player is currently jumping
         let gravity = 0.6;                          //! Rate at which player falls
         let jumpForce = -15;                        //! Initial upward velocity when jumping
@@ -723,6 +774,7 @@
             currentColumn: 0,
         };
 
+        // ===== Level Settings =====
         // Settings manager for persistent game settings
         const SettingsManager = {
             current: {
@@ -1942,11 +1994,11 @@
                 cancelAnimationFrame(animationFrameId);
             }
         });
+        
         console.log('All functions defined and listeners added');
 
         // Check if button exists
         const startLevelBtn = document.getElementById('startLevelBtn');
-
         if (startLevelBtn) {
             startLevelBtn.addEventListener('click', async function () {
                 const loadingAnimation = document.getElementById('loadingAnimation');
@@ -2108,8 +2160,8 @@
                 // Initialize UI and controls
                 await initializeLevel();
 
-                // Set up audio
-                await setupAudio();
+                // Set up audio (now in StartButton)
+                // await setupAudio();
 
                 // Start game loop
                 requestAnimationFrame(gameLoop);
