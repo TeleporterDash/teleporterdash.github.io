@@ -402,6 +402,7 @@
                     <button id="exportBtn">Export Level</button>
                     <button id="importBtn">Import Level</button>
                     <button id="clearBtn">Clear Grid</button>
+                    <button id="backToMenuBtn">Back to Menu</button>
                 </div>
 
                 <textarea id="importArea" style="display: none;"></textarea>
@@ -1197,6 +1198,17 @@ window.levelData = {
         musicSelect.addEventListener('change', function() {
             if (this.value === 'custom') {
                 customMusicInput.click();
+            }
+        });
+
+            // // Back to Menu Button
+        document.getElementById('backToMenuBtn').addEventListener('click', () => {
+            if (hasMatrixChanged()) {
+                if (confirm('You have unsaved changes. Are you sure you want to leave?')) {
+                    window.location.href = '../index.html';
+                }
+            } else {
+                window.location.href = '../index.html';
             }
         });
     </script>

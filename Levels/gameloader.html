@@ -447,9 +447,9 @@
         async function loadLevelFromGithub(filename) {
             try {
                 const response = await fetch(`${RAW_CONTENT_BASE}/${filename}`);
-                console.log(response);
+                loadresponse = console.log(response);
                 if (!response.ok) {
-                    throw new Error('Failed to fetch level');
+                    throw new Error('Failed to fetch level. Error:',loadresponse);
                 }
                 const levelCode = await response.text();
 
@@ -600,12 +600,43 @@
                             if (window.levelData) {
                                 console.log('Level data found:', window.levelData);
                                 processLevelData(window.levelData);
+                                requestAnimationFrame(updateGame); // Start the game after processing level
+                                if (isPracticeMode) {
+                                    // Initialize practice mode settings
+                                    const gameSpeedSelect = document.getElementById('gameSpeed');
+                                    if (gameSpeedSelect) {
+                                        gameSpeedSelect.disabled = false;
+                                        if (SettingsManager.current.gameSpeed) {
+                                            gameSpeed = SettingsManager.current.gameSpeed;
+                                            gameSpeedSelect.value = gameSpeed.toString();
+                                        }
+                                    }
+                                    
+                                    // Switch to practice mode music
+                                    if (isLevelStarted && !isPaused && !isGameOver && !isLevelComplete) {
+                                        try {
+                                            switchAudioTracks(practiceMusic, backgroundMusic);
+                                        } catch (error) {
+                                            console.error("Error switching to practice mode music:", error);
+                                        }
+                                    }
+                                }
+                                resolve();
+                            } else {
+                                const error = new Error('Level data not found in loaded script');
+                                console.error(error);
+                                showLoadingError(`Failed to load level: ${error.message}`);
+                                reject(error);
                             }
-
-
                         };
+
+                        levelScript.onerror = (error) => {
+                            console.error('Error loading level script:', error);
+                            showLoadingError(`Failed to load level ${levelNumber}`);
+                            reject(error);
+                        };
+
                         document.body.appendChild(levelScript);
-                        resolve();
                     }
                 } catch (error) {
                     console.error('Error initializing level data:', error);
@@ -661,8 +692,11 @@
                 // Create a blob from the array buffer
                 const blob = new Blob([data.musicData.data], { type: data.musicData.type });
                 levelMusic = URL.createObjectURL(blob);
+            } else if (isPracticeMode) {
+                levelMusic = '../Sound/Basic Soundeffects/practicetd.mp3';
             } else {
-                levelMusic = `../Sound/Level Soundtracks/${data.musicValue}`;
+                levelMusic = data.music;
+                console.log("Level Soundtrack: ",levelMusic);
             }
 
             levelId = data.id;
@@ -670,6 +704,7 @@
 
             // Initialize game systems
             // (now in StartButton) > setupAudio();
+            requestAnimationFrame(updateGame);
             calculateTotalBlocks();
 
             // Reset game state
@@ -1769,16 +1804,7 @@
             }
         }
 
-        /**
-         * Optimized game loop using requestAnimationFrame
-         * @param {number} timestamp - Current timestamp from requestAnimationFrame
-         */
-        let lastTime = 0;
-        function gameLoop(timestamp) {
-            const deltaTime = timestamp - lastTime;
-            lastTime = timestamp;
-            updateGame(deltaTime);
-        }
+        
 
         /**
          * Preloads all game assets before starting
@@ -2154,8 +2180,8 @@
                 // Initialize database
                 await initDB();
 
-                // Initialize level data
-                await initializeLevelData();
+                // Initialize level data (now in StartButton)
+                // await initializeLevelData();
 
                 // Initialize UI and controls
                 await initializeLevel();
@@ -2164,7 +2190,7 @@
                 // await setupAudio();
 
                 // Start game loop
-                requestAnimationFrame(gameLoop);
+                requestAnimationFrame(updateGame);
 
             } catch (error) {
                 console.error('Error during initialization:', error);
