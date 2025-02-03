@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Loading Level...</title>
+    <script src="../Modules/scoreManager.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
         body {
             margin: 0;
             display: flex;
@@ -12,14 +14,18 @@
             align-items: center;
             min-height: 100vh;
             background: #1a1a1a;
-            font-family: Arial, sans-serif;
+            font-family: 'Orbitron', sans-serif;
             transition: background-color 1s ease;
+            touch-action: manipulation;
         }
 
         #gameContainer {
             position: relative;
-            width: 1000px;
-            height: 400px;
+            width: calc(100% - 80px);
+            max-width: 1000px;
+            height: calc(100% - 60px);
+            min-height: 460px;
+            margin: 0 auto;
             overflow: hidden;
             perspective: 1000px;
             transition: none;
@@ -34,29 +40,6 @@
             width: 100%;
             height: 100%;
             transition: transform 0.1s ease-out;
-        }
-
-        #heightIndicator {
-            position: fixed;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 5px;
-            height: 200px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 5px;
-            z-index: 1001;
-        }
-
-        #playerIndicator {
-            position: absolute;
-            right: -2.5px;
-            width: 10px;
-            height: 10px;
-            background: #00ff00;
-            border-radius: 50%;
-            transform: translateY(-50%);
-            transition: top 0.1s ease-out;
         }
 
         #player {
@@ -142,6 +125,43 @@
             animation: glow 1s infinite alternate;
         }
 
+        .teleporter::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 12px solid white;
+            pointer-events: none;
+        }
+
+        .teleporter[data-rotation="90"]::after {
+            border: none;
+            border-bottom: 12px solid white;
+            border-right: 8px solid transparent;
+            border-left: 8px solid transparent;
+        }
+
+        .teleporter[data-rotation="180"]::after {
+            border-top: none;
+            border-bottom: 12px solid white;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+        }
+
+        .teleporter[data-rotation="270"]::after {
+            border: none;
+            border-bottom: 12px solid white;
+            border-right: 8px solid transparent;
+            border-left: 8px solid transparent;
+        }
+
+        /* Rotation classes for teleporter */
+
         @keyframes glow {
             from {
                 box-shadow: 0 0 5px #ff00ff;
@@ -152,17 +172,21 @@
             }
         }
 
-        /* Add level complete styling */
         #levelComplete {
-            position: absolute;
-            top: 50%;
+            position: fixed;
+            top: 40%;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, 0);
+            transform-style: preserve-3d;
+            perspective: none;
+            background: rgba(0, 0, 0, 0.475);
             color: #00ff00;
             font-size: 48px;
-            display: none;
+            padding: 20px;
+            border-radius: 10px;
             text-align: center;
-            z-index: 100;
+            z-index: 9999;
+            display: none;
         }
 
         #progressContainer {
@@ -207,7 +231,7 @@
             left: 50%;
             transform: translateX(-50%);
             padding: 5px 10px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.475);
             color: white;
             border-radius: 5px;
             font-size: 14px;
@@ -283,16 +307,7 @@
 <body>
     <div id="gameContainer">
         <div id="cameraContainer">
-            <div id="levelComplete">
-                Level Complete!
-                <br>
-                <button id="nextLevelBtn"
-                    style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Next
-                    Level</button>
-                <button onclick="window.location.href='../index.html'"
-                    style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Back
-                    to Menu</button>
-            </div>
+            
             <div id="player"></div>
             <div id="ground"></div>
         </div>
@@ -302,11 +317,9 @@
                 <div id="progressFill"></div>
             </div>
         </div>
-        <div id="heightIndicator">
-            <div id="playerIndicator"></div>
-        </div>
         <button id="muteButton"></button>
         <button id="pauseButton">⏸</button>
+        <div id="timer" style="position: fixed; top: 10px; left: 230px; background: rgba(0, 0, 0, 0.3); color: #00ff00; padding: 10px; border-radius: 5px; font-family: 'Orbitron', sans-serif; font-size: 24px; z-index: 1000;">0:00</div>
         <div id="gameOver">
             Game Over!
             <br>
@@ -316,7 +329,7 @@
                 to Menu</button>
         </div>
         <div id="settingsMenu"
-            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 20px; border-radius: 10px; color: white; text-align: center; z-index: 1000;">
+            style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); padding: 20px; border-radius: 10px; color: white; text-align: center; z-index: 1000;">
             <h2>Level Settings</h2>
 
             <!-- Volume Control with tooltip -->
@@ -379,7 +392,7 @@
             </button>
         </div>
         <div id="pauseMenu"
-            style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 20px; border-radius: 10px; color: white; text-align: center; z-index: 2000;">
+            style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.475); padding: 20px; border-radius: 10px; color: white; text-align: center; z-index: 2000;">
             <h2>Game Paused</h2>
             <button id="resumeBtn"
                 style="background: #00ff00; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Resume</button>
@@ -390,167 +403,390 @@
                 to Menu</button>
         </div>
     </div>
+    <div id="levelComplete">
+        Level Complete!
+        <br>
+        <button id="nextLevelBtn"
+            style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Next
+            Level</button>
+        <button onclick="window.location.href='../index.html'"
+            style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Back
+            to Menu</button>
+    </div>
 
     <script>
-        // Audio helper functions
-        async function safePlayAudio(audio, startTime = 0) {
-            if (!audio) return;
+        // Score tracking variables
+        let jumpCount = 0;
+        let deathCount = 0;
+        let startTime = 0;
+        let currentTime = 0;
+        let levelTimer = null;
+        let levelTime = 0;  // Track elapsed time in seconds
 
-            try {
-                if (startTime !== undefined) {
-                    audio.currentTime = startTime;
-                }
-                if (audio.readyState >= 2) {
+        // ===== Audio Manager =====
+        const AudioManager = {
+                // // "Initialize" Variables
+            backgroundMusic: null,
+            practiceMusic: null,
+            jumpSound: null,
+            deathSound: null,
+            completionSound: null,
+            isMuted: false,
+            lastMusicTime: 0,
+            isInitialized: false,
+
+                // // Play
+            async play(audio, startTime = 0) {
+                if (!audio) return;
+                try {
                     await audio.play();
-                } else {
-                    await new Promise((resolve) => {
-                        const playWhenReady = async () => {
-                            await audio.play();
-                            audio.removeEventListener('canplay', playWhenReady);
-                            resolve();
-                        };
-                        audio.addEventListener('canplay', playWhenReady);
-                    });
+                    // Set time after starting playback to avoid reset
+                    if (startTime !== undefined && startTime > 0) {
+                        audio.currentTime = startTime;
+                    }
+                } catch (error) {
+                    console.error("Error playing audio:", error);
                 }
-            } catch (error) {
-                console.error("Error playing audio:", error);
-            }
-        }
+            },
 
-        async function safePauseAudio(audio) {
-            if (!audio) return;
-            try {
-                audio.pause();
-            } catch (error) {
-                console.error("Error pausing audio:", error);
-            }
-        }
-
-        async function switchAudioTracks(trackToPlay, trackToPause) {
-            if (!trackToPlay || !trackToPause) return;
-            const currentTime = trackToPause.currentTime;
-            await safePauseAudio(trackToPause);
-            if (!isMuted) {
-                await safePlayAudio(trackToPlay, currentTime);
-            }
-        }
-
-        // Global level data variables
-        let levelMatrix = [0];      // Stores the level layout
-        let levelTitle;            // Stores the level name
-        let levelMusic;            // Stores the path to level music
-        let levelId;              // Stores the unique level identifier
-
-        const GITHUB_API_BASE = 'https://api.github.com/repos/NellowTCS/TeleporterDashLevels';
-        const RAW_CONTENT_BASE = 'https://raw.githubusercontent.com/NellowTCS/TeleporterDashLevels/main';
-
-        async function loadLevelFromGithub(filename) {
-            try {
-                const response = await fetch(`${RAW_CONTENT_BASE}/${filename}`);
-                loadresponse = console.log(response);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch level. Error:',loadresponse);
+                // // Pause
+            async pause(audio) {
+                if (!audio) return;
+                try {
+                    audio.pause();
+                } catch (error) {
+                    console.error("Error pausing audio:", error);
                 }
-                const levelCode = await response.text();
+            },
 
-                // Create a safe environment to evaluate the level code
-                const levelData = new Function(`
-                    window = {};
-                    ${levelCode}
-                    return window.levelData;
-                `)();
+                // // Switch Audio
+            async switchTracks(trackToPlay, trackToPause) {
+                if (!trackToPlay || !trackToPause) return;
+                const currentTime = trackToPause.currentTime;
+                await this.pause(trackToPause);
+                if (!this.isMuted) {
+                    await this.play(trackToPlay, currentTime);
+                }
+            },
 
-                return levelData;
-            } catch (error) {
-                console.error('Error loading level:', error);
-                throw error;
-            }
-        }
-
-        async function loadLevelFromIndexedDB(filename) {
-            return new Promise((resolve, reject) => {
-                if (!db) {
-                    reject(new Error('Database not initialized'));
+                // // Initialize Audio
+            async initialize(levelMusicPath) {
+                if (this.isInitialized) {
+                    // If already initialized, just update the background music source
+                    await this.pause(this.backgroundMusic);
+                    this.backgroundMusic = new Audio(levelMusicPath);
+                    this.backgroundMusic.loop = true;
                     return;
                 }
 
+                // Initialize all audio elements
+                this.backgroundMusic = new Audio(levelMusicPath);
+                this.practiceMusic = new Audio('../Sound/Basic Soundeffects/practicetd.ogg');
+                this.jumpSound = new Audio('../Sound/Basic Soundeffects/jumptd.ogg');
+                this.deathSound = new Audio('../Sound/Basic Soundeffects/deathtd.ogg');
+                this.completionSound = new Audio('../Sound/Basic Soundeffects/lvlcompletetd.ogg');
+
+                this.isInitialized = true;
+            },
+
+                // // Setup/Update Audio
+            async setup(levelMusicPath) {
+                // Initialize or update audio elements
+                await this.initialize(levelMusicPath);
+
                 try {
-                    const transaction = db.transaction([STORE_NAME], 'readonly');
-                    const store = transaction.objectStore(STORE_NAME);
-                    const request = store.get(filename);
+                    // Set audio properties
+                    this.backgroundMusic.loop = true;
+                    this.practiceMusic.loop = true;
 
-                    request.onsuccess = () => {
-                        if (request.result) {
-                            resolve(request.result);
-                        } else {
-                            reject(new Error('Level not found in local storage'));
-                        }
-                    };
+                    // Set volumes
+                    const volumeLevel = document.getElementById('volumeSlider').value / 100;
+                    this.backgroundMusic.volume = volumeLevel * 0.6;
+                    this.practiceMusic.volume = volumeLevel * 0.6;
+                    this.jumpSound.volume = volumeLevel * 0.2;
+                    this.deathSound.volume = volumeLevel * 0.7;
+                    this.completionSound.volume = volumeLevel * 0.7;
 
-                    request.onerror = () => {
-                        reject(request.error);
-                    };
+                    // Set initial mute states
+                    [this.backgroundMusic, this.practiceMusic, this.jumpSound, this.deathSound, this.completionSound].forEach(audio => {
+                        if (audio) audio.muted = this.isMuted;
+                    });
+
+                    // Create load promises for each audio element
+                    const loadPromises = [
+                        this.createLoadPromise(this.backgroundMusic),
+                        this.createLoadPromise(this.practiceMusic),
+                        this.createLoadPromise(this.jumpSound),
+                        this.createLoadPromise(this.deathSound),
+                        this.createLoadPromise(this.completionSound)
+                    ];
+
+                    // Start loading all audio files
+                    this.backgroundMusic.load();
+                    this.practiceMusic.load();
+                    this.jumpSound.load();
+                    this.deathSound.load();
+                    this.completionSound.load();
+
+                    // Wait for all audio to be ready
+                    await Promise.all(loadPromises);
+                    console.log('All audio loaded successfully');
                 } catch (error) {
-                    reject(error);
+                    console.error('Audio setup failed:', error);
+                    throw error;
                 }
-            });
-        }
+            },
+ 
+                // // Event Listener
+            async restart() {
+                if (this.backgroundMusic) {
+                    this.backgroundMusic.currentTime = 0;
+                    if (!this.isMuted) {
+                        try {
+                            await this.play(this.backgroundMusic);
+                        } catch (error) {
+                            console.error('Failed to restart audio:', error);
+                        }
+                    }
+                }
+            },
 
-        async function loadTestLevel() {
-            const dbName = 'LevelEditorDB';
-            const testStore = 'testLevel';
-            
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(dbName, 1);
-                
-                request.onerror = () => reject(new Error('Failed to open database'));
-                
-                request.onsuccess = (event) => {
-                    const db = event.target.result;
-                    const transaction = db.transaction([testStore], 'readonly');
-                    const store = transaction.objectStore(testStore);
-                    const getRequest = store.get('currentTest');
-                    
-                    getRequest.onsuccess = () => {
-                        const testData = getRequest.result;
-                        if (testData) {
-                            resolve({
-                                matrix: testData.matrix,
-                                title: 'Test Level',
-                                author: testData.author,
-                                difficulty: testData.difficulty,
-                                musicValue: testData.musicValue,
-                                musicData: testData.musicData,
-                                id: 'test',
-                                colorTransitionDuration: 2.0,
-                                colorTransitionDelay: 0.2
-                            });
-                        } else {
-                            reject(new Error('No test level found'));
+            createLoadPromise(audio) {
+                return new Promise((resolve, reject) => {
+                    audio.addEventListener('canplaythrough', resolve, { once: true });
+                    audio.addEventListener('error', reject, { once: true });
+                });
+            },
+
+                // // Fade Out Audio at Level Completion
+            async fadeOut(audio, duration = 1000) {
+                if (!audio || audio.paused) return;
+
+                const startVolume = audio.volume;
+                const steps = 20;
+                const stepTime = duration / steps;
+                const volumeStep = startVolume / steps;
+
+                for (let i = steps; i > 0; i--) {
+                    audio.volume = volumeStep * i;
+                    await new Promise(resolve => setTimeout(resolve, stepTime));
+                }
+
+                await this.pause(audio);
+                audio.volume = startVolume;
+            },
+
+                // // Mute
+            toggleMute() {
+                this.isMuted = !this.isMuted;
+                SettingsManager.current.isMuted = this.isMuted;
+                SettingsManager.save();
+
+                const currentMusic = isPracticeMode ? this.practiceMusic : this.backgroundMusic;
+
+                if (this.isMuted) {
+                    this.lastMusicTime = currentMusic.currentTime;
+                    this.pause(currentMusic);
+                } else if (isLevelStarted && !isPaused && !isGameOver && !isLevelComplete) {
+                    // Don't set currentTime before play, let play handle it
+                    this.play(currentMusic, this.lastMusicTime).catch(e => console.error("Error playing music:", e));
+                }
+
+                // Update volume for all audio elements
+                [this.backgroundMusic, this.practiceMusic, this.jumpSound, this.deathSound, this.completionSound].forEach(audio => {
+                    if (audio) {
+                        audio.volume = SettingsManager.current.volume / 100;
+                    }
+                });
+            }
+        };
+
+        // Global level data variables
+        let levelMatrix = [0];      // Stores the level layout
+        let levelColorRow = [];     // Stores the color information
+        let levelTitle;            // Stores the level name
+        let levelMusic;            // Stores the path to level music
+        let levelId;              // Stores the unique level identifier
+        let isLevelStarted = false;
+        let isPracticeMode = false;
+        let gameContainer = document.getElementById('gameContainer');  // Game container element
+
+        // Color mapping for blocks
+        const COLOR_MAP = {
+            '0': '#000000',  // Black
+            '-1': '#ff6b6b',  // Red
+            '-2': '#4ecdc4',  // Cyan
+            '-3': '#45b7d1',  // Blue
+            '-4': '#96ceb4',  // Green
+            '-5': '#ff9f1c',  // Orange
+            '-6': '#ffbe0b',  // Yellow
+            '-7': '#ff006e',  // Pink
+            '-8': '#8338ec',  // Purple
+            '-9': '#3a86ff'   // Light Blue
+        };
+
+        // ===== Level Loader =====
+        const LevelLoader = {
+                // // "Initialize" Variables
+            db: null,
+            DB_NAME: 'TeleporterDashDB',
+            STORE_NAME: 'downloadedLevels',
+            DB_VERSION: 2,
+            GITHUB_API_BASE: 'https://api.github.com/repos/NellowTCS/TeleporterDashLevels',
+            RAW_CONTENT_BASE: 'https://raw.githubusercontent.com/NellowTCS/TeleporterDashLevels/main',
+
+
+                // // Load from Github
+            async loadFromGithub(filename) {
+                try {
+                    const response = await fetch(`${this.RAW_CONTENT_BASE}/${filename}`);
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch level');
+                    }
+                    const levelCode = await response.text();
+
+                    // Create a safe environment to evaluate the level code
+                    const levelData = new Function(`
+                        window = {};
+                        ${levelCode}
+                        return window.levelData;
+                    `)();
+
+                    return levelData;
+                } catch (error) {
+                    console.error('Error loading level:', error);
+                    throw error;
+                }
+            },
+
+                // // Load from IndexedDB
+            async loadFromIndexedDB(filename) {
+                return new Promise((resolve, reject) => {
+                    if (!this.db) {
+                        reject(new Error('Database not initialized'));
+                        return;
+                    }
+
+                    try {
+                        const transaction = this.db.transaction([this.STORE_NAME], 'readonly');
+                        const store = transaction.objectStore(this.STORE_NAME);
+                        const request = store.get(filename);
+
+                        request.onsuccess = () => {
+                            if (request.result) {
+                                resolve(request.result);
+                            } else {
+                                reject(new Error('Level not found in local storage'));
+                            }
+                        };
+
+                        request.onerror = () => {
+                            reject(request.error);
+                        };
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            },
+
+                // // Load Test Level
+            async loadTestLevel() {
+                const dbName = 'LevelEditorDB';
+                const testStore = 'testLevel';
+
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(dbName, 1);
+
+                    request.onerror = () => reject(new Error('Failed to open database'));
+
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains(testStore)) {
+                            db.createObjectStore(testStore, { keyPath: 'currentTest' });
                         }
                     };
-                    
-                    getRequest.onerror = () => reject(new Error('Failed to load test level'));
-                };
-            });
-        }
 
-        /**
-       * Initializes level data either from a test level or from a level file
-       * Returns a Promise that resolves when level data is loaded
-       */
-        async function initializeLevelData() {
-            return new Promise(async (resolve, reject) => {
+                    request.onsuccess = (event) => {
+                        const db = event.target.result;
+                        const transaction = db.transaction([testStore], 'readonly');
+                        const store = transaction.objectStore(testStore);
+                        const getRequest = store.get('currentTest');
+
+                        getRequest.onsuccess = () => {
+                            const testData = getRequest.result;
+                            if (testData) {
+                                resolve({
+                                    matrix: testData.matrix,
+                                    title: 'Test Level',
+                                    author: testData.author,
+                                    difficulty: testData.difficulty,
+                                    musicValue: testData.musicValue,
+                                    musicData: testData.musicData,
+                                    id: 'test',
+                                    colorTransitionDuration: 2.0,
+                                    colorTransitionDelay: 0.2
+                                });
+                            } else {
+                                reject(new Error('No test level found'));
+                            }
+                        };
+
+                        request.onupgradeneeded = (event) => {
+                            const db = event.target.result;
+                            if (!db.objectStoreNames.contains(testStore)) {
+                                db.createObjectStore(testStore, { keyPath: 'currentTest' });
+                            }
+                        };
+
+                        getRequest.onerror = () => reject(new Error('Failed to load test level'));
+                    };
+                });
+            },
+
+                // // Initialize Database
+            async initDB() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
+            
+                    request.onerror = () => {
+                        console.error("Database error:", request.error);
+                        reject(new Error('Failed to open database'));
+                    };
+            
+                    request.onsuccess = (event) => {
+                        this.db = event.target.result;
+                        console.log("Database opened successfully");
+                        resolve(this.db);
+                    };
+            
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains(this.STORE_NAME)) {
+                            db.createObjectStore(this.STORE_NAME);
+                            console.log("Object store created");
+                        }
+                        if (!db.objectStoreNames.contains('scores')) {
+                            db.createObjectStore('scores');
+                            console.log("Scores object store created");
+                        }
+                    };
+                });
+            },
+
+                // // Initialize Level Data
+            async initializeLevelData() {
                 try {
                     const urlParams = new URLSearchParams(window.location.search);
 
                     // Test level from the editor
                     if (urlParams.has('test') && urlParams.get('test') === 'true') {
                         console.log('Loading test level from editor');
-                        const testData = await loadTestLevel();
-                        await processLevelData(testData);
-                        updateGame(); // Start the game after loading test level
-                        resolve();
+                        const testData = await this.loadTestLevel();
+                        await this.processLevelData(testData);
+                        requestAnimationFrame(updateGame);
+                        if (isPracticeMode) {
+                            this.initializePracticeMode();
+                        }
                         return;
                     }
 
@@ -561,24 +797,23 @@
                         console.log('Loading level:', levelTitle);
 
                         try {
-                            if (!db) {
+                            if (!this.db) {
                                 throw new Error('Database not initialized');
                             }
 
-                            const level = await loadLevelFromIndexedDB(levelTitle);
+                            const level = await this.loadFromIndexedDB(levelTitle);
                             console.log('Level loaded from IndexedDB:', level);
 
                             if (!level || !level.matrix) {
                                 throw new Error('Invalid level data');
                             }
 
-                            await processLevelData(level);
+                            await this.processLevelData(level);
                             console.log('Level processed successfully');
-                            resolve();
                         } catch (error) {
                             console.error('Error loading online level:', error);
                             showLoadingError(`Failed to load level: ${error.message}`);
-                            reject(error);
+                            throw error;
                         }
                         return;
                     }
@@ -586,7 +821,6 @@
                     // Built-in levels
                     if (urlParams.has('level')) {
                         console.log('Loading built-in level');
-                        const urlParams = new URLSearchParams(window.location.search);
                         const levelNumber = urlParams.get('level');
                         console.log('Loading level:', levelNumber);
 
@@ -595,144 +829,205 @@
                         levelScript.src = `level${levelNumber}.js`;
                         console.log('Created script element for:', levelScript.src);
 
-                        levelScript.onload = () => {
-                            console.log('Level script loaded');
-                            if (window.levelData) {
-                                console.log('Level data found:', window.levelData);
-                                processLevelData(window.levelData);
-                                requestAnimationFrame(updateGame); // Start the game after processing level
-                                if (isPracticeMode) {
-                                    // Initialize practice mode settings
-                                    const gameSpeedSelect = document.getElementById('gameSpeed');
-                                    if (gameSpeedSelect) {
-                                        gameSpeedSelect.disabled = false;
-                                        if (SettingsManager.current.gameSpeed) {
-                                            gameSpeed = SettingsManager.current.gameSpeed;
-                                            gameSpeedSelect.value = gameSpeed.toString();
-                                        }
-                                    }
-                                    
-                                    // Switch to practice mode music
-                                    if (isLevelStarted && !isPaused && !isGameOver && !isLevelComplete) {
-                                        try {
-                                            switchAudioTracks(practiceMusic, backgroundMusic);
-                                        } catch (error) {
-                                            console.error("Error switching to practice mode music:", error);
-                                        }
-                                    }
+                        await new Promise((resolve, reject) => {
+                            levelScript.onload = () => {
+                                console.log('Level script loaded');
+                                if (window.levelData) {
+                                    console.log('Level data found:', window.levelData);
+                                    this.processLevelData(window.levelData)
+                                        .then(() => {
+                                            requestAnimationFrame(updateGame);
+                                            if (isPracticeMode) {
+                                                this.initializePracticeMode();
+                                            }
+                                            resolve();
+                                        })
+                                        .catch(reject);
+                                } else {
+                                    reject(new Error('Level data not found in loaded script'));
                                 }
-                                resolve();
-                            } else {
-                                const error = new Error('Level data not found in loaded script');
-                                console.error(error);
-                                showLoadingError(`Failed to load level: ${error.message}`);
+                            };
+
+                            levelScript.onerror = (error) => {
+                                console.error('Error loading level script:', error);
+                                showLoadingError(`Failed to load level ${levelNumber}`);
                                 reject(error);
-                            }
-                        };
+                            };
 
-                        levelScript.onerror = (error) => {
-                            console.error('Error loading level script:', error);
-                            showLoadingError(`Failed to load level ${levelNumber}`);
-                            reject(error);
-                        };
-
-                        document.body.appendChild(levelScript);
+                            document.body.appendChild(levelScript);
+                        });
                     }
                 } catch (error) {
                     console.error('Error initializing level data:', error);
                     showLoadingError(`Failed to initialize level: ${error.message}`);
-                    reject(error);
+                    throw error;
                 }
-            });
-        }
+            },
 
-        async function processLevelData(data) {
-            if (!data || !data.matrix) {
-                throw new Error('Invalid level data: missing matrix');
-            }
-
-            // For built-in levels, first row is already the color row
-            levelMatrix = data.matrix.slice(1);
-            const colorRow = data.matrix[0];
-
-            // Process colors
-            colorSteps.length = 0;
-            const uniqueColors = [...new Set(colorRow)].filter(code => code < 0);
-
-            uniqueColors.forEach(code => {
-                const color = COLOR_MAP[code];
-                if (color) {
-                    colorSteps.push(color);
+                // // Process Level Data
+            async processLevelData(data) {
+                if (!data || !data.matrix) {
+                    throw new Error('Invalid level data: missing matrix');
                 }
-            });
 
-            // If we only have one color, duplicate it
-            if (colorSteps.length === 1) {
-                console.log('Only one color found, duplicating it');
-                colorSteps.push(colorSteps[0]);
+                // For built-in levels, first row is already the color row
+                levelMatrix = data.matrix.slice(1);
+                levelColorRow = data.matrix[0];  // Store color row separately
+
+                // Process colors
+                colorSteps.length = 0;
+                const uniqueColors = [...new Set(levelColorRow)].filter(code => {
+                    // Handle both simple color codes and block properties
+                    if (typeof code === 'string') {
+                        const props = code.split('/');
+                        return props.some(p => p.startsWith('-'));
+                    }
+                    return code < 0;
+                }).map(code => {
+                    // Extract color from block properties if needed
+                    if (typeof code === 'string') {
+                        const props = code.split('/');
+                        const colorProp = props.find(p => p.startsWith('-'));
+                        return parseInt(colorProp);
+                    }
+                    return code;
+                });
+
+                uniqueColors.forEach(code => {
+                    const color = COLOR_MAP[code];
+                    if (color) {
+                        colorSteps.push(color);
+                    }
+                });
+
+                // If we only have one color, duplicate it
+                if (colorSteps.length === 1) {
+                    console.log('Only one color found, duplicating it');
+                    colorSteps.push(colorSteps[0]);
+                }
+
+                // Reset color transition
+                colorIndex = 0;
+                transitionFactor = 0;
+
+                // Set initial background color
+                const gameContainer = document.getElementById('gameContainer');
+                if (gameContainer && colorSteps.length > 0) {
+                    gameContainer.style.backgroundColor = colorSteps[0];
+                }
+
+                // Set other level data
+                levelTitle = data.title || 'Untitled Level';
+                levelAuthor = data.author || 'Unknown Author';
+                levelDifficulty = data.difficulty || 'Normal';
+
+                // Handle music data
+                if (data.musicValue === 'custom' && data.musicData) {
+                    const blob = new Blob([data.musicData.data], { type: data.musicData.type });
+                    levelMusic = URL.createObjectURL(blob);
+                } else if (isPracticeMode) {
+                    levelMusic = '../Sound/Basic Soundeffects/practicetd.ogg';
+                } else if (data.musicValue) {
+                    levelMusic = `../Sound/Level Soundtracks/${data.musicValue}`;
+                    console.log("Level Soundtrack: ", levelMusic);
+                } else if (data.musicData) {
+                    levelMusic = `${data.musicData}`;
+                    console.log("Level Soundtrack: ", levelMusic);
+                } else if (data.music && data.music.startsWith('../Sound/Level Soundtracks/')) {
+                    levelMusic = `${data.music}`;
+                    console.log("Level Soundtrack: ", levelMusic);
+                } else if (data.music) {
+                    levelMusic = `../Sound/Level Soundtracks/${data.music}`;
+                    console.log("Level Soundtrack: ", levelMusic);
+                } else {
+                    levelMusic = '../Sound/Level Soundtracks/level1.ogg';
+                    console.log("Using default soundtrack");
+                }
+
+                levelId = data.id;
+                document.title = levelTitle;
+
+                // Initialize audio with the new level music
+                await AudioManager.setup(levelMusic);
+
+                // Initialize game systems
+                requestAnimationFrame(updateGame);
+                calculateTotalBlocks();
+
+                // Reset game state
+                gameSpeed = 5;
+                currentColumn = 0;
+                playerVelocity = 0;
+                rotation = 0;
+                isOnPlatform = false;
+                doubleJumpAvailable = true;
+                passedBlocks = 0;
+
+                // Reset progress bar
+                progressFill.style.width = '0%';
+                progressText.textContent = '0%';
+
+                // Reset player position
+                player.style.bottom = `${CONSTANTS.GROUND_HEIGHT}px`;
+                player.style.transform = 'rotate(0deg)';
+
+                // Reset camera position
+                cameraOffsetY = 0;
+            },
+            // // Initialize Practice Mode
+            initializePracticeMode() {
+                const gameSpeedSelect = document.getElementById('gameSpeed');
+                if (gameSpeedSelect) {
+                    gameSpeedSelect.disabled = false;
+                    if (SettingsManager.current.gameSpeed) {
+                        gameSpeed = SettingsManager.current.gameSpeed;
+                        gameSpeedSelect.value = gameSpeed.toString();
+                    }
+                }
+
+                // Switch to practice mode music
+                if (isLevelStarted && !isPaused && !isGameOver && !isLevelComplete) {
+                    try {
+                        AudioManager.switchTracks(AudioManager.practiceMusic, AudioManager.backgroundMusic);
+                    } catch (error) {
+                        console.error("Error switching to practice mode music:", error);
+                    }
+                }
             }
+        };
 
-            // Reset color transition
-            colorIndex = 0;
-            transitionFactor = 0;
+        // Initialize database when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                console.log('Starting ScoreManager initialization...');
+                await ScoreManager.initialize().catch(error => {
+                    console.error('ScoreManager initialization failed:', error);
+                    throw error;
+                });
+                console.log('ScoreManager initialized successfully');
 
-            // Set initial background color
-            const gameContainer = document.getElementById('gameContainer');
-            if (gameContainer && colorSteps.length > 0) {
-                gameContainer.style.backgroundColor = colorSteps[0];
+                // Only update UI if initialization succeeded
+                if (levelId) {
+                    ScoreManager.updateScoreboardUI(levelId);
+                }
+
+                // Then proceed with level loading
+                console.log('Starting level initialization...');
+                await LevelLoader.initDB();
+                await LevelLoader.initializeLevelData();
+                await initializeLevel();
+                console.log('Level initialization complete');
+            } catch (error) {
+                console.error('Error during initialization:', error);
+                showLoadingError(`Failed to initialize: ${error.message}`);
             }
-
-            // Set other level data
-            levelTitle = data.title || 'Untitled Level';
-            levelAuthor = data.author || 'Unknown Author';
-            levelDifficulty = data.difficulty || 'Normal';
-            
-            // Handle music data
-            if (data.musicValue === 'custom' && data.musicData) {
-                // Create a blob from the array buffer
-                const blob = new Blob([data.musicData.data], { type: data.musicData.type });
-                levelMusic = URL.createObjectURL(blob);
-            } else if (isPracticeMode) {
-                levelMusic = '../Sound/Basic Soundeffects/practicetd.mp3';
-            } else {
-                levelMusic = data.music;
-                console.log("Level Soundtrack: ",levelMusic);
-            }
-
-            levelId = data.id;
-            document.title = levelTitle;
-
-            // Initialize game systems
-            // (now in StartButton) > setupAudio();
-            requestAnimationFrame(updateGame);
-            calculateTotalBlocks();
-
-            // Reset game state
-            gameSpeed = 5;
-            currentColumn = 0;
-            playerVelocity = 0;
-            rotation = 0;
-            isOnPlatform = false;
-            doubleJumpAvailable = true;
-            passedBlocks = 0;
-
-            // Reset progress bar
-            progressFill.style.width = '0%';
-            progressText.textContent = '0%';
-
-            // Reset player position
-            player.style.bottom = `${CONSTANTS.GROUND_HEIGHT}px`;
-            player.style.transform = 'rotate(0deg)';
-
-            // Reset camera position
-            cameraOffsetY = 0;
-            document.getElementById('cameraContainer').style.transform = 'translateY(0)';
-        }
+        });
 
         // ===== Variables =====
         const CONSTANTS = {
             COLUMN_WIDTH: 40,       // Width of each column in the level matrix
             GROUND_HEIGHT: 50,      // Height of the ground from bottom of container
+            INITIAL_SPACE: 740,     // Initial empty space before level starts (IMP)
         };
 
 
@@ -769,19 +1064,6 @@
 
         // Position of the finish line in the level matrix
         let finishLinePosition = 0;
-
-        // Audio elements for game sounds
-        let backgroundMusic = new Audio();
-        let practiceMusic = new Audio();
-        let jumpSound = new Audio();
-        let deathSound = new Audio();
-        let completionSound = new Audio();
-        let isMuted = false;
-        let lastMusicTime = 0; // Add this at the top with other global variables
-
-        // Game mode flags
-        let isPracticeMode = false;  // Practice mode disables death
-        let isLevelStarted = false;  // Whether the level has begun
 
         // Auto-restart settings
         let autoRestartEnabled = false;  // Whether to automatically restart on death
@@ -837,7 +1119,7 @@
                     gameSpeed = this.current.gameSpeed;
 
                     // Apply volume to all audio elements
-                    [backgroundMusic, practiceMusic, jumpSound, deathSound, completionSound].forEach(audio => {
+                    [AudioManager.backgroundMusic, AudioManager.practiceMusic, AudioManager.jumpSound, AudioManager.deathSound, AudioManager.completionSound].forEach(audio => {
                         if (audio) {
                             audio.volume = this.current.volume / 100;
                             audio.muted = this.current.isMuted;
@@ -851,127 +1133,25 @@
         };
 
         /**
-         * Sets up audio elements with the selected music and sound effects
-         * Includes error handling for failed audio loading
-         */
-        async function setupAudio() {
-            // Pause all music if playing
-            await safePauseAudio(backgroundMusic);
-            await safePauseAudio(practiceMusic);
-
-            try {
-                // Initialize audio elements with proper sources
-                backgroundMusic = new Audio(levelMusic);
-                practiceMusic = new Audio('../Sound/Basic Soundeffects/practicetd.mp3');
-                jumpSound = new Audio('../Sound/Basic Soundeffects/jumptd.mp3');
-                deathSound = new Audio('../Sound/Basic Soundeffects/deathtd.ogg');
-                completionSound = new Audio('../Sound/Basic Soundeffects/lvlcompletetd.mp3');
-
-                // Set audio properties
-                backgroundMusic.loop = true;
-                practiceMusic.loop = true;
-
-                // Set volumes
-                const volumeLevel = document.getElementById('volumeSlider').value / 100;
-                backgroundMusic.volume = volumeLevel * 0.6;
-                practiceMusic.volume = volumeLevel * 0.6;
-                jumpSound.volume = volumeLevel * 0.2;
-                deathSound.volume = volumeLevel * 0.7;
-                completionSound.volume = volumeLevel * 0.7;
-
-                // Set initial mute states
-                [backgroundMusic, practiceMusic, jumpSound, deathSound, completionSound].forEach(audio => {
-                    if (audio) audio.muted = isMuted;
-                });
-
-                // Create load promises for each audio element
-                const loadPromises = [
-                    new Promise((resolve, reject) => {
-                        backgroundMusic.addEventListener('canplaythrough', resolve, { once: true });
-                        backgroundMusic.addEventListener('error', reject, { once: true });
-                    }),
-                    new Promise((resolve, reject) => {
-                        practiceMusic.addEventListener('canplaythrough', resolve, { once: true });
-                        practiceMusic.addEventListener('error', reject, { once: true });
-                    }),
-                    new Promise((resolve, reject) => {
-                        jumpSound.addEventListener('canplaythrough', resolve, { once: true });
-                        jumpSound.addEventListener('error', reject, { once: true });
-                    }),
-                    new Promise((resolve, reject) => {
-                        deathSound.addEventListener('canplaythrough', resolve, { once: true });
-                        deathSound.addEventListener('error', reject, { once: true });
-                    }),
-                    new Promise((resolve, reject) => {
-                        completionSound.addEventListener('canplaythrough', resolve, { once: true });
-                        completionSound.addEventListener('error', reject, { once: true });
-                    })
-                ];
-
-                // Start loading all audio files
-                backgroundMusic.load();
-                practiceMusic.load();
-                jumpSound.load();
-                deathSound.load();
-                completionSound.load();
-
-                // Wait for all audio to be ready
-                await Promise.all(loadPromises);
-                console.log('All audio loaded successfully');
-            } catch (error) {
-                console.error('Audio setup failed:', error);
-                throw error;
-            }
-        }
-
-
-        // ===== Mute or Pause Functionality =====
-        /**
          * Toggles game state (mute or pause)
          * @param {string} action - Either 'mute' or 'pause'
          */
         function toggleGameState(action) {
             if (action === 'mute') {
-                isMuted = !isMuted;
-                SettingsManager.current.isMuted = isMuted;
-                SettingsManager.save();
-
-                // Update button appearance
-                const muteButton = document.getElementById('muteButton');
-                if (muteButton) {
-                    const newIcon = isMuted ? '🔇' : '🔊';
-                    muteButton.textContent = newIcon;
-                }
-
-                const currentMusic = isPracticeMode ? practiceMusic : backgroundMusic;
-
-                if (isMuted) {
-                    lastMusicTime = currentMusic.currentTime;
-                    currentMusic.pause();
-                } else if (isLevelStarted && !isPaused && !isGameOver && !isLevelComplete) {
-                    currentMusic.currentTime = lastMusicTime;
-                    currentMusic.play().catch(e => console.error("Error playing music:", e));
-                }
-
-                // Update volume for all audio elements
-                [backgroundMusic, practiceMusic, jumpSound, deathSound, completionSound].forEach(audio => {
-                    if (audio) {
-                        audio.volume = SettingsManager.current.volume / 100;
-                    }
-                });
+                AudioManager.toggleMute();
             } else if (action === 'pause') {
                 if (isGameOver || isLevelComplete || !isLevelStarted) return;
 
                 isPaused = !isPaused;
                 pauseMenu.style.display = isPaused ? 'block' : 'none';
 
-                const currentMusic = isPracticeMode ? practiceMusic : backgroundMusic;
+                const currentMusic = isPracticeMode ? AudioManager.practiceMusic : AudioManager.backgroundMusic;
                 if (isPaused) {
-                    safePauseAudio(currentMusic);
+                    AudioManager.pause(currentMusic);
                 } else {
                     // Resume from current position if not muted
-                    if (!isMuted) {
-                        safePlayAudio(currentMusic, currentMusic.currentTime).catch(e => console.error("Error resuming music:", e));
+                    if (!AudioManager.isMuted) {
+                        AudioManager.play(currentMusic, currentMusic.currentTime).catch(e => console.error("Error resuming music:", e));
                     }
                 }
             }
@@ -987,11 +1167,11 @@
             // Add single event listener
             newMuteButton.addEventListener('click', function () {
                 toggleGameState('mute');
-                this.textContent = isMuted ? '🔇' : '🔊';
+                this.textContent = AudioManager.isMuted ? '🔇' : '🔊';
             });
 
             // Set initial icon
-            newMuteButton.textContent = isMuted ? '🔇' : '🔊';
+            newMuteButton.textContent = AudioManager.isMuted ? '🔇' : '🔊';
         }
 
         /**
@@ -1037,8 +1217,31 @@
          * @param {number} row - The row position in the level matrix
          */
         function createObstacleFromMatrix(type, row) {
+            // Parse block properties if type is a string (contains properties)
+            let blockType = type;
+            let blockColor = null;
+            let blockRotation = 0;
+
+            if (typeof type === 'string') {
+                const properties = type.split('/');
+                // First property is always the type
+                blockType = parseInt(properties[0]);
+
+                // Process other properties
+                for (let i = 1; i < properties.length; i++) {
+                    const prop = properties[i];
+                    if (prop.startsWith('-')) {
+                        // Color property (negative number)
+                        blockColor = COLOR_MAP[parseInt(prop)];
+                    } else if (prop.startsWith('@')) {
+                        // Rotation property
+                        blockRotation = parseInt(prop.substring(1));
+                    }
+                }
+            }
+
             // Handle empty blocks (type 0)
-            if (type === 0) {
+            if (blockType === 0) {
                 const emptyBlock = document.createElement('div');
                 emptyBlock.className = 'empty-block';
                 emptyBlock.type = 'empty';
@@ -1049,7 +1252,7 @@
 
                 // Invert the row calculation to start from bottom
                 const baseHeight = 50;
-                const rowSpacing = 60;
+                const rowSpacing = 45; // Match platform block height
                 const invertedRow = (levelMatrix.length - 1) - row;
                 emptyBlock.style.bottom = (baseHeight + (invertedRow * rowSpacing)) + 'px';
 
@@ -1061,7 +1264,7 @@
             // Create obstacle element based on type
             const obstacle = document.createElement('div');
 
-            if (type === 4) { // Finish line
+            if (blockType === 4) { // Finish line
                 obstacle.className = 'finishLine';
                 obstacle.style.width = '10px';
                 obstacle.style.height = '350px';
@@ -1069,17 +1272,42 @@
                 obstacle.type = 'finish';
                 obstacle.style.position = 'absolute';
                 obstacle.style.bottom = '50px'; // Align with ground
-            } else if (type === 2) { // Spike
+            } else if (blockType === 2) { // Spike
                 obstacle.className = 'spike';
                 obstacle.type = 'spike';
-            } else if (type === 3) { // Teleporter
+            } else if (blockType === 3) { // Teleporter
                 obstacle.className = 'teleporter';
                 obstacle.type = 'teleporter';
-            } else if (type === 1) { // Platform
+                obstacle.style.width = '30px';
+                obstacle.style.height = '60px';
+                obstacle.style.background = 'linear-gradient(to right, #ff00ff, #8c00ff)';
+                obstacle.style.borderRadius = '15px';
+                obstacle.style.animation = 'glow 1s infinite alternate';
+
+                // Extract rotation if it exists
+                if (typeof type === 'string' && type.includes('@')) {
+                    const rotation = type.split('@')[1];
+                    obstacle.setAttribute('data-rotation', rotation);
+                }
+            } else if (blockType === 1) { // Platform
                 obstacle.className = 'platform';
                 obstacle.type = 'platform';
                 obstacle.style.width = '45px';
                 obstacle.style.height = '45px';
+            }
+
+            // Apply color if specified
+            if (blockColor) {
+                if (blockType === 2) { // For spikes
+                    obstacle.style.borderBottomColor = blockColor;
+                } else {
+                    obstacle.style.backgroundColor = blockColor;
+                }
+            }
+
+            // Apply rotation if specified
+            if (blockRotation !== 0) {
+                obstacle.style.transform = `rotate(${blockRotation}deg)`;
             }
 
             // Position the obstacle
@@ -1087,30 +1315,146 @@
 
             // Calculate vertical position (inverted row calculation)
             const baseHeight = 50;
-            const rowSpacing = 60;
+            const rowSpacing = 45; // Match platform block height
             const invertedRow = (levelMatrix.length - 1) - row;
             obstacle.style.bottom = (baseHeight + (invertedRow * rowSpacing)) + 'px';
 
-            // Add to game container and obstacles array
             document.getElementById('cameraContainer').appendChild(obstacle);
             obstacles.push({ element: obstacle, type: obstacle.type });
+        }
+
+        /**
+         * Handles collision detection between player and obstacles
+         * @param {HTMLElement} player - The player element
+         * @param {HTMLElement} obstacle - The obstacle element to check collision with
+         * @returns {boolean} - True if collision detected, false otherwise
+         */
+        function checkCollision(player, obstacle) {
+            if (obstacle.classList.contains('empty-block')) return false;
+
+            // Get raw positions without camera influence
+            const playerBottom = parseInt(player.style.bottom);
+            const playerLeft = parseInt(player.style.left);
+            const obstacleBottom = parseInt(obstacle.style.bottom);
+            const obstacleLeft = parseInt(obstacle.style.left);
+
+            const tolerance = 5;  // Small overlap allowance for smoother collision
+            const playerSize = 30; // Player width/height
+            const obstacleSize = obstacle.type === 'platform' ? 45 : 30;
+
+            // Get obstacle rotation
+            let rotation = 0;
+            const transform = obstacle.style.transform;
+            if (transform) {
+                const match = transform.match(/rotate\((\d+)deg\)/);
+                if (match) {
+                    rotation = parseInt(match[1]);
+                }
+            }
+
+            // Adjust collision box based on rotation for spikes
+            let adjustedObstacleBottom = obstacleBottom;
+            let adjustedObstacleLeft = obstacleLeft;
+
+            if (obstacle.type === 'spike') {
+                switch (rotation) {
+                    case 90:  // Pointing left
+                        adjustedObstacleLeft += obstacleSize / 2;
+                        break;
+                    case 180:  // Pointing up
+                        adjustedObstacleBottom += obstacleSize / 2;
+                        break;
+                    case 270:  // Pointing right
+                        adjustedObstacleLeft -= obstacleSize / 2;
+                        break;
+                    default:  // Pointing down or no rotation
+                        adjustedObstacleBottom -= obstacleSize / 2;
+                }
+            }
+
+            // Check for overlap in both x and y directions
+            return !(playerLeft + playerSize - tolerance < adjustedObstacleLeft ||
+                playerLeft + tolerance > adjustedObstacleLeft + obstacleSize ||
+                playerBottom + playerSize - tolerance < adjustedObstacleBottom ||
+                playerBottom + tolerance > adjustedObstacleBottom + obstacleSize);
+        }
+
+        /**
+         * Handles specific collision logic for platforms
+         * Includes landing detection and side collision
+         */
+        function handlePlatformCollision(playerRect, platform) {
+            // Get raw positions without camera influence
+            const playerBottom = parseInt(player.style.bottom);
+            const platformBottom = parseInt(platform.style.bottom);
+            const playerLeft = parseInt(player.style.left);
+            const platformLeft = parseInt(platform.style.left);
+
+            // Calculate overlaps
+            const horizontalOverlap = Math.min(playerLeft + 30, platformLeft + 40) -
+                Math.max(playerLeft, platformLeft);
+            const verticalOverlap = Math.min(playerBottom + 30, platformBottom + 40) -
+                Math.max(playerBottom, platformBottom);
+            
+            const playerWidth = 30;
+            const horizontalCollision = horizontalOverlap / playerWidth;
+
+            // First, check for side collision - this takes priority
+            // If we have any meaningful horizontal collision and we're not jumping, it's death
+            if (horizontalCollision > 0.2 && // Significant horizontal collision
+                verticalOverlap > 5 && // Some vertical overlap
+                !isJumping && // Not in a jump
+                Math.abs(playerBottom - (platformBottom + 40)) > 15) { // Not very close to top
+                return 'death';
+            }
+
+            // Only then check for safe landing
+            if (playerVelocity > 0 && // Moving down
+                Math.abs(playerBottom - (platformBottom + 40)) < 10 && // Very close to top
+                horizontalCollision > 0.3) { // Enough horizontal overlap for landing
+                
+                // Safe landing
+                isOnPlatform = true;
+                isJumping = false;
+                doubleJumpAvailable = true;
+                playerVelocity = 0;
+                player.style.bottom = (platformBottom + 45) + 'px';
+                return 'safe';
+            }
+            
+            return 'none';
         }
 
         /**
          * Handles level completion state and UI
          * Called when player reaches the finish line
          */
-        function levelComplete() {
+        function levelComplete() {  
             isLevelComplete = true;
+            clearInterval(levelTimer);
+        
+            // Save score using the filename instead of levelId
+            const urlParams = new URLSearchParams(window.location.search);
+            const onlineparam = urlParams.get('online');
+            if (onlineparam) {
+                const filename = urlParams.get('levelFile');
+                ScoreManager.addRun(filename, levelTime, jumpCount, deathCount);
+            } else {
+                const filename = urlParams.get('level');
+                ScoreManager.addRun('Level ' + filename, levelTime, jumpCount, deathCount);
+            }
+        
+            
+
             if (levelCompleteElement) {  // Add null check
                 levelCompleteElement.style.display = 'block';
             }
 
             // Play completion sound and fade music
-            if (!isMuted) {
-                completionSound.currentTime = 0;
-                completionSound.play();
-                fadeOutMusic();
+            if (!AudioManager.isMuted) {
+                AudioManager.completionSound.currentTime = 0;
+                AudioManager.completionSound.play();
+                AudioManager.fadeOut(isPracticeMode ? AudioManager.practiceMusic : AudioManager.backgroundMusic);
             }
 
             // Update progress indicators
@@ -1172,7 +1516,7 @@
 
             // Apply game speed to obstacle movement
             const baseSpeed = 5;  // Default speed
-            const currentSpeed = isPracticeMode ? (baseSpeed * parseFloat(document.getElementById('gameSpeed').value)) : baseSpeed;
+            const currentSpeed = isPracticeMode ? (baseSpeed * (SettingsManager.current.gameSpeed / 5)) : baseSpeed;
 
             // Create new obstacles when needed
             // Only creates obstacles when there's enough space from the last one
@@ -1240,9 +1584,29 @@
                         } else if (obstacle.type === 'spike' && !isPracticeMode) {  // Check practice mode
                             gameOver();
                         } else if (obstacle.type === 'teleporter') {
-                            player.style.bottom = (parseInt(player.style.bottom) + 120) + 'px';
+                            const rotation = parseInt(obstacle.element.getAttribute('data-rotation') || '0');
+                            
+                            if (rotation === 90 || rotation === 270) {
+                                // Horizontal teleport - move obstacles forward/back
+                                const dx = 240; // Move obstacles forward
+                                
+                                // Update all obstacle positions
+                                obstacles.forEach(obs => {
+                                    const obsLeft = parseInt(obs.element.style.left || '0');
+                                    obs.element.style.left = (obsLeft + dx) + 'px';
+                                });
+                                
+                                // Keep player at fixed position
+                                player.style.left = '100px';
+                            } else {
+                                // Vertical teleport
+                                const dy = rotation === 180 ? -240 : 120;
+                                player.style.bottom = (parseInt(player.style.bottom) + dy) + 'px';
+                            }
+                            
                             playerVelocity = 0;
-                            createParticles('#ff00ff'); // Purple particles on teleport
+                            createParticles('#ff00ff');
+                            setTimeout(() => createParticles('#ff00ff'), 100);
                         } else if (obstacle.type === 'platform') {
                             const platformCollision = handlePlatformCollision(playerRect, obstacle.element);
                             if (platformCollision === 'death' && !isPracticeMode) {  // Check practice mode
@@ -1294,14 +1658,6 @@
             // Apply camera transform
             const cameraContainer = document.getElementById('cameraContainer');
             cameraContainer.style.transform = `translateY(${cameraOffsetY}px)`;
-
-            // Update height indicator
-            const playerIndicator = document.getElementById('playerIndicator');
-            const heightIndicator = document.getElementById('heightIndicator');
-            const maxHeight = levelMatrix.length * 60;
-            const invertedPosition = maxHeight - newBottom;
-            const indicatorPosition = (invertedPosition / maxHeight) * heightIndicator.offsetHeight;
-            playerIndicator.style.top = `${Math.min(heightIndicator.offsetHeight, Math.max(0, indicatorPosition))}px`;
         }
 
         /**
@@ -1323,11 +1679,41 @@
             const playerSize = 30; // Player width/height
             const obstacleSize = obstacle.type === 'platform' ? 45 : 30;
 
+            // Get obstacle rotation
+            let rotation = 0;
+            const transform = obstacle.style.transform;
+            if (transform) {
+                const match = transform.match(/rotate\((\d+)deg\)/);
+                if (match) {
+                    rotation = parseInt(match[1]);
+                }
+            }
+
+            // Adjust collision box based on rotation for spikes
+            let adjustedObstacleBottom = obstacleBottom;
+            let adjustedObstacleLeft = obstacleLeft;
+
+            if (obstacle.type === 'spike') {
+                switch (rotation) {
+                    case 90:  // Pointing left
+                        adjustedObstacleLeft += obstacleSize / 2;
+                        break;
+                    case 180:  // Pointing up
+                        adjustedObstacleBottom += obstacleSize / 2;
+                        break;
+                    case 270:  // Pointing right
+                        adjustedObstacleLeft -= obstacleSize / 2;
+                        break;
+                    default:  // Pointing down or no rotation
+                        adjustedObstacleBottom -= obstacleSize / 2;
+                }
+            }
+
             // Check for overlap in both x and y directions
-            return !(playerLeft + playerSize - tolerance < obstacleLeft ||
-                playerLeft + tolerance > obstacleLeft + obstacleSize ||
-                playerBottom + playerSize - tolerance < obstacleBottom ||
-                playerBottom + tolerance > obstacleBottom + obstacleSize);
+            return !(playerLeft + playerSize - tolerance < adjustedObstacleLeft ||
+                playerLeft + tolerance > adjustedObstacleLeft + obstacleSize ||
+                playerBottom + playerSize - tolerance < adjustedObstacleBottom ||
+                playerBottom + tolerance > adjustedObstacleBottom + obstacleSize);
         }
 
         /**
@@ -1359,14 +1745,17 @@
                 player.style.bottom = (platformBottom + 45) + 'px';
                 return 'safe';
             } else {
-                // Side collision check
+                // Side collision check - only if player is significantly inside the platform
                 const playerCenterX = playerLeft + (playerWidth / 2);
-                const significantOverlap = horizontalOverlap > playerWidth * 0.4;
-
-                if (significantOverlap &&
-                    playerCenterX > platformLeft + 5 &&
-                    playerCenterX < platformLeft + 40 &&
-                    playerBottom > platformBottom + 15) {
+                const platformCenterX = platformLeft + 22.5; // Half of platform width (45/2)
+                const verticalOverlap = Math.min(playerBottom + 30, platformBottom + 45) -
+                    Math.max(playerBottom, platformBottom);
+                
+                // Check if we're colliding from the side and not just grazing the top
+                if (horizontalOverlap > playerWidth * 0.4 && // Significant horizontal overlap
+                    verticalOverlap > 10 && // Significant vertical overlap
+                    playerBottom < platformBottom + 40 && // Not near the top
+                    Math.abs(playerCenterX - platformCenterX) < 20) { // Close to platform center
                     return 'death';
                 }
             }
@@ -1380,30 +1769,55 @@
         async function gameOver() {
             if (!isPracticeMode) {  // Only trigger game over if NOT in practice mode
                 isGameOver = true;
-
-                if (gameOverElement) {
-                    gameOverElement.style.display = 'block';
-                }
+                deathCount++;  // Track deaths
 
                 // Stop all music immediately
                 await Promise.all([
-                    safePauseAudio(backgroundMusic),
-                    safePauseAudio(practiceMusic)
+                    AudioManager.pause(AudioManager.backgroundMusic),
+                    AudioManager.pause(AudioManager.practiceMusic)
                 ]);
 
-                if (!isMuted) {
-                    deathSound.currentTime = 0;
-                    deathSound.play();
+                if (!AudioManager.isMuted) {
+                    AudioManager.deathSound.currentTime = 0;
+                    AudioManager.deathSound.play();
                 }
 
-                createParticles('#ff0000'); // Red particles on death
+                // Create particles at player position
+                const playerRect = player.getBoundingClientRect();
+                const cameraRect = document.getElementById('cameraContainer').getBoundingClientRect();
+                const relativeX = playerRect.left - cameraRect.left;
+                const relativeY = cameraRect.bottom - playerRect.bottom;
 
+                // Get color of the obstacle that caused death
+                let particleColor = '#ff0000'; // Default red
+                const nearbyObstacles = obstacles.filter(o =>
+                    checkCollision(player, o.element) &&
+                    (o.element.style.backgroundColor || o.element.style.borderBottomColor)
+                );
+
+                if (nearbyObstacles.length > 0) {
+                    const obstacle = nearbyObstacles[0].element;
+                    particleColor = obstacle.style.backgroundColor || obstacle.style.borderBottomColor;
+                }
+
+                createParticles(particleColor);
+
+                // Handle auto restart
                 if (autoRestartEnabled) {
                     setTimeout(() => {
                         restartGame();
                     }, 1000);
-                } else {
+                    return;
+                }
+
+                // Show game over screen
+                if (gameOverElement) {
                     gameOverElement.style.display = 'block';
+                }
+
+                // Fade out music
+                if (!AudioManager.isMuted) {
+                    AudioManager.fadeOut(isPracticeMode ? AudioManager.practiceMusic : AudioManager.backgroundMusic);
                 }
 
                 cancelAnimationFrame(animationFrameId);
@@ -1450,6 +1864,10 @@
             player.style.bottom = '50px';
             player.style.transform = 'rotate(0deg)';
 
+            // Reset camera position
+            cameraOffsetY = 0;
+            document.getElementById('cameraContainer').style.transform = 'translateY(0)';
+
             // Clear obstacles and particles
             obstacles.forEach(obstacle => {
                 if (obstacle.element && obstacle.element.parentNode) {
@@ -1470,20 +1888,23 @@
 
             // Stop all music first
             await Promise.all([
-                safePauseAudio(backgroundMusic),
-                safePauseAudio(practiceMusic)
+                AudioManager.pause(AudioManager.backgroundMusic),
+                AudioManager.pause(AudioManager.practiceMusic)
             ]);
 
             // Start the correct music if not muted
-            if (!isMuted && !isPaused) {
+            if (!AudioManager.isMuted && !isPaused) {
                 try {
-                    const musicToPlay = isPracticeMode ? practiceMusic : backgroundMusic;
-                    const musicToPause = isPracticeMode ? backgroundMusic : practiceMusic;
-                    await switchAudioTracks(musicToPlay, musicToPause);
+                    const musicToPlay = isPracticeMode ? AudioManager.practiceMusic : AudioManager.backgroundMusic;
+                    const musicToPause = isPracticeMode ? AudioManager.backgroundMusic : AudioManager.practiceMusic;
+                    await AudioManager.switchTracks(musicToPlay, musicToPause);
                 } catch (error) {
                     console.error("Audio reset failed:", error);
                 }
             }
+
+            // Restart music
+            await AudioManager.restart();
 
             // Reset player position
             player.style.bottom = `${CONSTANTS.GROUND_HEIGHT}px`;
@@ -1491,17 +1912,14 @@
             rotation = 0;
             player.style.transform = 'rotate(0deg)';
 
-            // Reset camera position
-            cameraOffsetY = 0;
-            document.getElementById('cameraContainer').style.transform = 'translateY(0)';
-
             // Start game loop
             updateGame();
         }
 
         // ===== Event listeners for player input =====
-
         document.addEventListener('touchstart', jump);
+        document.addEventListener('keydown', handleSpaceJump);
+        document.addEventListener('mousedown', handleMouseJump);
         restartBtn.addEventListener('click', restartGame);
 
         /**
@@ -1521,15 +1939,36 @@
                 }
                 isJumping = true;
                 isOnPlatform = false;
+                jumpCount++;  // Track jumps
                 playerVelocity = jumpForce;
 
                 lastJumpPressTime = currentTime;
 
                 // Play jump sound if available and not muted
-                if (!isMuted && jumpSound?.readyState === 4) {
-                    jumpSound.currentTime = 0;
-                    jumpSound.play().catch(error => console.log("Jump sound failed:", error));
+                if (!AudioManager.isMuted && AudioManager.jumpSound?.readyState === 4) {
+                    AudioManager.jumpSound.currentTime = 0;
+                    AudioManager.jumpSound.play().catch(error => console.log("Jump sound failed:", error));
                 }
+            }
+        }
+
+        /**
+         * Handles spacebar input for jumping
+         * Prevents page scrolling on space press
+         */
+        function handleSpaceJump(e) {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                jump();
+            }
+        }
+
+        /**
+         * Handles mouse input for jumping
+         */
+        function handleMouseJump(e) {
+            if (e.button === 0) { // Left click only
+                jump();
             }
         }
 
@@ -1545,32 +1984,29 @@
             if (currentTime - lastProgressUpdate < progressUpdateInterval) return;
 
             // Calculate progress based on current column position
-            const totalColumns = levelMatrix[0].length;
-            const delayColumns = 3; // Creates a 2-second delay for smoother progress
-            const adjustedColumn = Math.max(0, currentColumn - delayColumns);
-
-            // Calculate progress with finer granularity
-            const progress = (adjustedColumn / totalColumns) * 100;
-            const clampedProgress = Math.min(Math.round(progress), 99); // Cap at 99% until complete
-
-            // Only show 100% when level is actually complete
-            const finalProgress = isLevelComplete ? 100 :
-                progress >= 98 ? 99 : // Force 99% when near the end
-                    clampedProgress;
+            let progress = 0;
+            if (totalBlocks > 0) {
+                progress = Math.min((passedBlocks / totalBlocks) * 100, 100);
+            }
+            const numSections = colorSteps.length - 1;
+            const sectionSize = 100 / numSections;
+            colorIndex = Math.min(Math.floor(progress / sectionSize), numSections - 1);
+            const sectionStart = colorIndex * sectionSize;
+            transitionFactor = (progress - sectionStart) / sectionSize;
 
             // Update UI elements
             const progressText = document.getElementById('progressText');
             const progressFill = document.getElementById('progressFill');
 
-            progressText.textContent = `${finalProgress}%`;
-            progressFill.style.width = `${finalProgress}%`;
+            progressText.textContent = `${progress}%`;
+            progressFill.style.width = `${progress}%`;
 
             // Update progress bar colors based on completion
-            if (finalProgress > 75) {
+            if (progress > 75) {
                 progressFill.style.background = 'linear-gradient(90deg, #00ff00, #4287f5)';
-            } else if (finalProgress > 50) {
+            } else if (progress > 50) {
                 progressFill.style.background = 'linear-gradient(90deg, #ffff00, #00ff00)';
-            } else if (finalProgress > 25) {
+            } else if (progress > 25) {
                 progressFill.style.background = 'linear-gradient(90deg, #ffa500, #ffff00)';
             }
 
@@ -1579,8 +2015,8 @@
             if (heightIndicator) {
                 const indicatorHeight = heightIndicator.offsetHeight;
                 const playerIndicator = document.getElementById('playerIndicator');
-                const position = (finalProgress / 100) * indicatorHeight;
-                playerIndicator.style.top = `${position}px`;
+                const position = (progress / 100) * indicatorHeight;
+                playerIndicator.style.top = `${Math.min(heightIndicator.offsetHeight, Math.max(0, position))}px`;
             }
 
             lastProgressUpdate = currentTime;
@@ -1616,12 +2052,12 @@
          * Used during level completion and game over
          */
         async function fadeOutMusic() {
-            const currentMusic = isPracticeMode ? practiceMusic : backgroundMusic;
+            const currentMusic = isPracticeMode ? AudioManager.practiceMusic : AudioManager.backgroundMusic;
             while (currentMusic.volume > 0.02) {
                 currentMusic.volume -= 0.02;  // Reduce volume by 2%
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
-            await safePauseAudio(currentMusic);
+            await AudioManager.pause(currentMusic);
             currentMusic.volume = SettingsManager.current.volume / 100;  // Reset to user's volume setting
         }
 
@@ -1661,6 +2097,13 @@
             if (autoRestartCheckbox) {
                 autoRestartCheckbox.checked = SettingsManager.current.autoRestartEnabled;
                 autoRestartEnabled = SettingsManager.current.autoRestartEnabled;
+
+                // Add change event listener for auto restart
+                autoRestartCheckbox.addEventListener('change', function () {
+                    autoRestartEnabled = this.checked;
+                    SettingsManager.current.autoRestartEnabled = autoRestartEnabled;
+                    SettingsManager.save();
+                });
             }
 
             // Visual effects setup
@@ -1684,7 +2127,7 @@
                     SettingsManager.save();
 
                     // Apply volume to all audio elements
-                    [backgroundMusic, practiceMusic, jumpSound, deathSound, completionSound].forEach(audio => {
+                    [AudioManager.backgroundMusic, AudioManager.practiceMusic, AudioManager.jumpSound, AudioManager.deathSound, AudioManager.completionSound].forEach(audio => {
                         if (audio) {
                             audio.volume = SettingsManager.current.volume / 100;
                         }
@@ -1708,23 +2151,27 @@
                             gameSpeedSelect.value = "1";
                             SettingsManager.current.gameSpeed = gameSpeed;
                             SettingsManager.save();
+                        } else {
+                            // Initialize game speed when practice mode is enabled
+                            gameSpeed = SettingsManager.current.gameSpeed || 5;
+                            gameSpeedSelect.value = (gameSpeed / 5).toString();
                         }
                     }
 
                     // Only switch music if the level is actually running
                     if (isLevelStarted && !isPaused && !isGameOver && !isLevelComplete) {
                         try {
-                            const musicToPlay = isPracticeMode ? practiceMusic : backgroundMusic;
-                            const musicToPause = isPracticeMode ? backgroundMusic : practiceMusic;
-                            await switchAudioTracks(musicToPlay, musicToPause);
+                            const musicToPlay = isPracticeMode ? AudioManager.practiceMusic : AudioManager.backgroundMusic;
+                            const musicToPause = isPracticeMode ? AudioManager.backgroundMusic : AudioManager.practiceMusic;
+                            await AudioManager.switchTracks(musicToPlay, musicToPause);
                         } catch (error) {
                             console.error("Error switching music tracks:", error);
                         }
                     } else {
                         // If level isn't running, make sure both music tracks are paused
                         await Promise.all([
-                            safePauseAudio(backgroundMusic),
-                            safePauseAudio(practiceMusic)
+                            AudioManager.pause(AudioManager.backgroundMusic),
+                            AudioManager.pause(AudioManager.practiceMusic)
                         ]);
                     }
                 });
@@ -1742,9 +2189,9 @@
 
                 gameSpeedSelect.addEventListener('change', function () {
                     if (isPracticeMode) {
-                        const newSpeed = parseFloat(this.value);
-                        gameSpeed = newSpeed;
-                        SettingsManager.current.gameSpeed = newSpeed;
+                        const speedMultiplier = parseFloat(this.value);
+                        gameSpeed = 5 * speedMultiplier;
+                        SettingsManager.current.gameSpeed = gameSpeed;
                         SettingsManager.save();
                     }
                 });
@@ -1757,6 +2204,7 @@
                     SettingsManager.current.controlMethod = method;
                     SettingsManager.save();
                     setupControls(method);
+                    console.log("Control Method: ", method, " set")
                 });
             }
         }
@@ -1783,28 +2231,6 @@
                 document.addEventListener('mousedown', handleMouseJump);
             }
         }
-
-        /**
-         * Handles spacebar input for jumping
-         * Prevents page scrolling on space press
-         */
-        function handleSpaceJump(e) {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                jump();
-            }
-        }
-
-        /**
-         * Handles mouse input for jumping
-         */
-        function handleMouseJump(e) {
-            if (e.button === 0) { // Left click only
-                jump();
-            }
-        }
-
-        
 
         /**
          * Preloads all game assets before starting
@@ -1835,7 +2261,7 @@
         document.getElementById('restartFromPauseBtn').addEventListener('click', () => {
             pauseMenu.style.display = 'none';
             isPaused = false;
-            restartGame();
+            location.reload();
         });
 
         // Toggle pause with pause button
@@ -1848,22 +2274,19 @@
             }
         });
 
-        // Color mapping from level editor
-        const COLOR_MAP = {
-            '-1': '#000000',    // Default black
-            '-2': '#622f62',    // Dark purple
-            '-3': '#305d30',    // Dark green
-            '-4': '#743a3a',    // Dark red
-            '-5': '#353576'    // Dark blue
-        };
-
         // Smooth background transition logic using the color codes
         const colorSteps = [
+            COLOR_MAP['0'],
             COLOR_MAP['-1'],
             COLOR_MAP['-2'],
             COLOR_MAP['-3'],
             COLOR_MAP['-4'],
-            COLOR_MAP['-5']
+            COLOR_MAP['-5'],
+            COLOR_MAP['-6'],
+            COLOR_MAP['-7'],
+            COLOR_MAP['-8'],
+            COLOR_MAP['-9']
+
         ];
         let colorIndex = 0;
         let transitionFactor = 0;
@@ -1874,7 +2297,7 @@
         const transitionDuration = totalTransitionTime / numberOfTransitions;
         const transitionSpeed = 1 / (transitionDuration * 60); // Assuming 60 frames per second
 
-        // Add these constants near the top of your script
+        // ===== Color =====
         const COLOR_TRANSITION = {
             DURATION: 2,    // Duration of each color transition in seconds
             SPEED: 0.0052    // Speed of transition (smaller = slower)
@@ -1882,31 +2305,53 @@
 
         // Update the updateBackgroundColor function
         function updateBackgroundColor() {
-            if (colorSteps.length < 2) return;
-
-            // Don't proceed if we've reached the end
-            if (colorIndex >= colorSteps.length - 1 && transitionFactor >= 1) {
-                return;
-            }
-
-            // Update transition factor
-            transitionFactor += COLOR_TRANSITION.SPEED;
-
-            // When transition is complete, move to next color
-            if (transitionFactor >= 1) {
-                transitionFactor = 0;
-                colorIndex = Math.min(colorIndex + 1, colorSteps.length - 2);
-            }
-
-            const currentColor = colorSteps[colorIndex];
-            const nextColor = colorSteps[colorIndex + 1];
-
+            // Basic validation
+            if (!levelMatrix || !levelMatrix.length || !levelColorRow) return;
+            
             try {
-                const newColor = interpolateColor(currentColor, nextColor, transitionFactor);
+                // Account for initial empty space using CONSTANTS
+                const delayColumns = Math.floor(CONSTANTS.INITIAL_SPACE / CONSTANTS.COLUMN_WIDTH);
+                const adjustedColumn = Math.max(0, currentColumn - delayColumns);
+                
+                // Get current and next codes from the stored color row
+                const currentRawCode = levelColorRow[adjustedColumn];
+                const nextRawCode = levelColorRow[Math.min(adjustedColumn + 1, levelColorRow.length - 1)];
+
+                // Don't force negative numbers, allow 0 for black
+                const currentCode = `${extractColorCode(currentRawCode) || 0}`;
+                const nextCode = `${extractColorCode(nextRawCode) || 0}`;
+
+                // Get colors from color map
+                const currentColor = COLOR_MAP[currentCode] || '#000000';  // Default to black
+                const nextColor = COLOR_MAP[nextCode] || '#000000';
+                
+                if (!currentColor || !nextColor) {
+                    console.error('Invalid color codes:', currentCode, nextCode);
+                    return;
+                }
+
+                // Create darker versions
+                const currentDarkerColor = makeColorDarker(currentColor);
+                const nextDarkerColor = makeColorDarker(nextColor);
+                
                 const gameContainer = document.getElementById('gameContainer');
-                if (gameContainer) {
+                if (!gameContainer) return;
+
+                // If colors are the same, no need to interpolate
+                if (currentCode === nextCode) {
+                    gameContainer.style.backgroundColor = currentDarkerColor;
+                    gameContainer.style.transition = 'none';
+                    return;
+                }
+                
+                // Calculate transition
+                const rowSpacing = 45;  // Match platform block width
+                const factor = (player.x % rowSpacing) / rowSpacing;
+                const newColor = interpolateColor(currentDarkerColor, nextDarkerColor, factor);
+                
+                // Apply the new color if valid
+                if (newColor && newColor.length === 7) {
                     gameContainer.style.backgroundColor = newColor;
-                    // Remove the CSS transition to make color changes immediate
                     gameContainer.style.transition = 'none';
                 }
             } catch (error) {
@@ -1916,6 +2361,9 @@
 
         // Update the interpolateColor function for smoother transitions
         function interpolateColor(color1, color2, factor) {
+            if (!color1 || !color2 || typeof color1 !== 'string' || typeof color2 !== 'string') {
+                return COLOR_MAP['0'];
+            }
             // Ensure factor is between 0 and 1
             factor = Math.max(0, Math.min(1, factor));
 
@@ -1940,50 +2388,121 @@
             return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
         }
 
+        // Make colors darker for background
+        function makeColorDarker(color) {
+            if (!color || typeof color !== 'string' || !color.startsWith('#')) {
+                return COLOR_MAP['0'];  // Return default color if input is invalid
+            }
+
+            try {
+                // Convert hex to RGB
+                const r = parseInt(color.slice(1,3), 16) || 0;
+                const g = parseInt(color.slice(3,5), 16) || 0;
+                const b = parseInt(color.slice(5,7), 16) || 0;
+                
+                // Make each component 40% darker
+                const darkerR = Math.max(0, Math.floor(r * 0.6));
+                const darkerG = Math.max(0, Math.floor(g * 0.6));
+                const darkerB = Math.max(0, Math.floor(b * 0.6));
+                
+                // Convert back to hex
+                return `#${darkerR.toString(16).padStart(2,'0')}${darkerG.toString(16).padStart(2,'0')}${darkerB.toString(16).padStart(2,'0')}`;
+            } catch (error) {
+                console.error('Error in makeColorDarker:', error);
+                return COLOR_MAP['0'];  // Return default color on error
+            }
+        }
+
+        function extractColorCode(code) {
+            if (typeof code === 'string') {
+                const props = code.split('/');
+                const colorProp = props.find(p => p.startsWith('-'));
+                return colorProp ? parseInt(colorProp) : -1;
+            }
+            return code;
+        }
+
         /**
          * Enhanced level data validation
          * @throws {Error} If validation fails
          */
         function validateLevelData(matrix) {
-            if (!matrix || !Array.isArray(matrix) || !matrix.length || !Array.isArray(matrix[0])) {
-                throw new Error('Invalid level matrix format');
+            if (!matrix || !Array.isArray(matrix)) {
+                throw new Error('Invalid level data: matrix must be an array');
+            }
+
+            if (matrix.length < 2) {
+                throw new Error('Invalid level data: matrix must have at least 2 rows');
             }
 
             const width = matrix[0].length;
-            let hasFinishLine = false;
-            let hasValidColorCodes = false;
+            if (width === 0) {
+                throw new Error('Invalid level data: matrix rows cannot be empty');
+            }
 
-            // Check matrix structure and content
-            for (let row = 0; row < matrix.length; row++) {
-                if (matrix[row].length !== width) {
-                    throw new Error('Inconsistent row lengths in matrix');
+            // Validate first row (color codes)
+            const colorRow = matrix[0];
+            colorRow.forEach((code, index) => {
+                if (typeof code === 'string') {
+                    const props = code.split('/');
+                    // First property is always the type
+                    blockType = parseInt(props[0]);
+
+                    // Process other properties
+                    for (let i = 1; i < props.length; i++) {
+                        const prop = props[i];
+                        if (prop.startsWith('-')) {
+                            // Color property (negative number)
+                            blockColor = COLOR_MAP[parseInt(prop)];
+                        } else if (prop.startsWith('@')) {
+                            // Rotation property
+                            blockRotation = parseInt(prop.substring(1));
+                        }
+                    }
+                } else if (code < 0 && !COLOR_MAP[code]) {
+                    throw new Error(`Invalid color code ${code} at position ${index} in color row`);
+                }
+            });
+
+            // Validate level rows
+            for (let i = 1; i < matrix.length; i++) {
+                const row = matrix[i];
+                if (row.length !== width) {
+                    throw new Error(`Invalid level data: row ${i} has different width than first row`);
                 }
 
-                for (let col = 0; col < width; col++) {
-                    const cell = matrix[row][col];
+                row.forEach((block, j) => {
+                    if (typeof block === 'string') {
+                        const props = block.split('/');
+                        // First property is always the type
+                        block = parseInt(props[0]);
 
-                    // Top row can contain negative numbers for colors
-                    if (row === 0 && cell < 0 && cell >= -5) {
-                        hasValidColorCodes = true;
-                        continue;
+                        // Process other properties
+                        for (let i = 1; i < props.length; i++) {
+                            const prop = props[i];
+                            if (prop.startsWith('-')) {
+                                // Color property (negative number)
+                                const colorCode = parseInt(prop);
+                                if (!COLOR_MAP[colorCode]) {
+                                    throw new Error(`Invalid color code ${prop} at position [${i},${j}]`);
+                                }
+                            } else if (prop.startsWith('@')) {
+                                // Rotation property
+                                const rotation = parseInt(prop.substring(1));
+                                if (![0, 90, 180, 270].includes(rotation)) {
+                                    throw new Error(`Invalid rotation ${prop} at position [${i},${j}]`);
+                                }
+                            } else {
+                                throw new Error(`Invalid block property ${prop} at position [${i},${j}]`);
+                            }
+                        }
+                    } else if (typeof block !== 'number' || block < 0 || block > 4) {
+                        throw new Error(`Invalid block type ${block} at position [${i},${j}]`);
                     }
-
-                    // Other rows must contain valid obstacle codes
-                    if (typeof cell !== 'number' || cell < 0 || cell > 4) {
-                        throw new Error(`Invalid cell value ${cell} at position [${row},${col}]`);
-                    }
-
-                    if (cell === 4) hasFinishLine = true;
-                }
+                });
             }
 
-            if (!hasFinishLine) {
-                throw new Error('Level must have a finish line (type 4)');
-            }
-
-            if (!hasValidColorCodes) {
-                console.warn('No background color codes found in top row');
-            }
+            return true;
         }
 
         /**
@@ -2020,7 +2539,7 @@
                 cancelAnimationFrame(animationFrameId);
             }
         });
-        
+
         console.log('All functions defined and listeners added');
 
         // Check if button exists
@@ -2032,7 +2551,7 @@
 
                 try {
                     // Load level data first
-                    await initializeLevelData();
+                    await LevelLoader.initializeLevelData();
 
                     // Rest of your start button code...
                     loadingAnimation.style.display = 'block';
@@ -2064,21 +2583,20 @@
                     doubleJumpAvailable = true;
 
                     // Setup audio and wait for it to be ready
-                    await setupAudio();
+                    await AudioManager.setup(levelMusic);
 
                     // Start the appropriate music
-                    if (!isMuted) {
+                    if (!AudioManager.isMuted) {
                         try {
-                            const musicToPlay = isPracticeMode ? practiceMusic : backgroundMusic;
-                            const musicToPause = isPracticeMode ? backgroundMusic : practiceMusic;
-                            await switchAudioTracks(musicToPlay, musicToPause);
+                            const musicToPlay = isPracticeMode ? AudioManager.practiceMusic : AudioManager.backgroundMusic;
+                            const musicToPause = isPracticeMode ? AudioManager.backgroundMusic : AudioManager.practiceMusic;
+                            await AudioManager.switchTracks(musicToPlay, musicToPause);
                         } catch (error) {
                             console.error("Error playing music:", error);
                         }
                     }
 
                     isLevelStarted = true;
-
 
                     // Reset animation frame if it exists
                     if (animationFrameId) {
@@ -2087,6 +2605,22 @@
                     }
 
                     // Start the game loop
+                    initializeLevel();
+                    isLevelStarted = true;
+                    // Start the level timer
+                    levelTime = 0;
+                    levelTimer = setInterval(() => {
+                        if (!isPaused && !isGameOver && !isLevelComplete) {
+                            levelTime++;
+                            // Update timer display
+                            const timerDisplay = document.getElementById('timer');
+                            if (timerDisplay) {
+                                const minutes = Math.floor(levelTime / 60);
+                                const seconds = levelTime % 60;
+                                timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                            }
+                        }
+                    }, 1000);
                     requestAnimationFrame(updateGame);
 
                 } catch (error) {
@@ -2115,88 +2649,26 @@
             particles = [];
         }
 
-
-        // Initialize IndexedDB
-        function initDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-                request.onerror = () => {
-                    console.error('Failed to open database:', request.error);
-                    reject(request.error);
-                };
-
-                request.onsuccess = (event) => {
-                    db = event.target.result;
-                    console.log('Database opened successfully');
-                    resolve(db);
-                };
-
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    if (!db.objectStoreNames.contains(STORE_NAME)) {
-                        db.createObjectStore(STORE_NAME, { keyPath: 'filename' });
-                        console.log('Object store created');
-                    }
-                };
-            });
+        //===== Error Handling =====
+        function showError(message, container) {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            errorElement.innerHTML = `
+                <p>${message}</p>
+                <button onclick="this.parentElement.remove()">OK</button>
+            `;
+            container.appendChild(errorElement);
         }
 
-        async function loadLevelFromIndexedDB(filename) {
-            return new Promise((resolve, reject) => {
-                if (!db) {
-                    reject(new Error('Database not initialized'));
-                    return;
-                }
-
-                try {
-                    const transaction = db.transaction([STORE_NAME], 'readonly');
-                    const store = transaction.objectStore(STORE_NAME);
-                    const request = store.get(filename);
-
-                    request.onsuccess = () => {
-                        if (request.result) {
-                            resolve(request.result);
-                        } else {
-                            reject(new Error('Level not found in local storage'));
-                        }
-                    };
-
-                    request.onerror = () => {
-                        reject(request.error);
-                    };
-                } catch (error) {
-                    reject(error);
-                }
-            });
-        }
-
-        // Initialize database when page loads
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                // Load settings first
-                SettingsManager.load();
-
-                // Initialize database
-                await initDB();
-
-                // Initialize level data (now in StartButton)
-                // await initializeLevelData();
-
-                // Initialize UI and controls
-                await initializeLevel();
-
-                // Set up audio (now in StartButton)
-                // await setupAudio();
-
-                // Start game loop
-                requestAnimationFrame(updateGame);
-
-            } catch (error) {
-                console.error('Error during initialization:', error);
-                showLoadingError('Failed to initialize game. Please try again.');
+        function showLoadingError(message, isBuiltIn = false) {
+            const container = document.querySelector(
+                isBuiltIn ? '.built-in-levels #current-level' : '.online-levels #current-level'
+            );
+            if (container) {
+                container.innerHTML = `<p>${message}</p>`;
             }
-        });
+        }
+
     </script>
 </body>
 

@@ -15,6 +15,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            touch-action: manipulation;
         }
 
         #mainContainer {
@@ -82,6 +83,21 @@
         .cell.teleporter {
             background: linear-gradient(to right, #ff00ff, #8c00ff);
             animation: glow 1s infinite alternate;
+            position: relative;
+        }
+
+        .cell.teleporter::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 12px solid white;
+            pointer-events: none;
         }
 
         .cell.finish {
@@ -305,10 +321,53 @@
         .draft-item button:hover {
             background-color: #0b8043;
         }
+
+        .rotation-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rotation-controls button {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid #ccc;
+            background: #fff;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .rotation-controls button:hover {
+            background: #f0f0f0;
+        }
+
+        #rotationDisplay {
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .cell.rotatable {
+            transition: transform 0.2s ease;
+        }
+
+        #currentDraftIndicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 1000;
+            display: none;
+        }
     </style>
 </head>
 <body>
     <h1 class="header">Teleporter Dash Level Creator</h1>
+    <div id="currentDraftIndicator">Current Draft: <span></span></div>
     <div id="mainContainer">
         <div id="leftPanel">
             <div id="gridContainer">
@@ -345,11 +404,11 @@
                 <div class="control-group">
                     <label for="musicSelect">Background Music:</label>
                     <select id="musicSelect">
-                        <option value="level1.mp3">Stereo Madness</option>
-                        <option value="level2.mp3">Back on Track</option>
-                        <option value="level3.mp3">Polargeist</option>
-                        <option value="level4.mp3">Dry Out</option>
-                        <option value="level5.mp3">Base After Base</option>
+                        <option value="level1.ogg">Stereo Madness</option>
+                        <option value="level2.ogg">Back on Track</option>
+                        <option value="level3.ogg">Polargeist</option>
+                        <option value="level4.ogg">Dry Out</option>
+                        <option value="level5.ogg">Base After Base</option>
                         <option value="custom">Custom Music...</option>
                     </select>
                     <input type="file" id="customMusicInput" accept="audio/*" style="display: none;">
@@ -381,19 +440,27 @@
                         <button class="tool" data-type="2">Spike</button>
                         <button class="tool" data-type="3">Teleporter</button>
                         <button class="tool" data-type="4">Finish</button>
-                        <button class="tool" data-type="c">Color</button>
+                        <button class="tool" data-type="c">Color</button> 
                     </div>
                 </div>
 
                 <div class="control-group" id="colorPickerGroup" style="display: none;">
-                    <label>Color:</label>
+                    <label>Section Color:</label>
                     <select id="colorPicker">
-                        <option value="1">Black</option>
-                        <option value="2">Purple</option>
-                        <option value="3">Green</option>
-                        <option value="4">Red</option>
-                        <option value="5">Blue</option>
                     </select>
+                    <br>
+                    <label>Block Color:</label>
+                    <select id="blockColorPicker">
+                    </select>
+                </div>
+
+                <div class="control-group" id="rotationGroup" style="display: none;">
+                    <label>Rotation:</label>
+                    <div class="rotation-controls">
+                        <button id="rotateLeft">↺</button>
+                        <span id="rotationDisplay">0°</span>
+                        <button id="rotateRight">↻</button>
+                    </div>
                 </div>
 
                 <div class="action-group">
@@ -428,10 +495,14 @@
 
             // // Changeable Variables 
         let hasUnsavedChanges = false;
+        let hasMatrixChanged = false;
         let lastExportedMatrix = null;
+        let currentRotation = 0;
         let currentTool = '0';
+        let lastToolBeforeColor = '1'; // Store last tool before color change
         let isMouseDown = false;
         let nextLevelId = 0;
+        let musicData = null;
 
             // // Custom Music
         let customMusicFile = null;
@@ -439,14 +510,19 @@
 
             // // Colors
         const COLOR_MAP = {
-            0: '#000000',     // Default black
-            '-1': '#000000',  // Black
-            '-2': '#913291',  // Dark purple
-            '-3': '#339033',  // Dark green
-            '-4': '#963535',  // Dark red
-            '-5': '#2a2a8d'   // Dark blue
+            '-1': '#ff6b6b',  // Red
+            '-2': '#4ecdc4',  // Cyan
+            '-3': '#45b7d1',  // Blue
+            '-4': '#96ceb4',  // Green
+            '-5': '#ff9f1c',  // Orange
+            '-6': '#ffbe0b',  // Yellow
+            '-7': '#ff006e',  // Pink
+            '-8': '#8338ec',  // Purple
+            '-9': '#3a86ff',  // Light Blue
+            '0': '#000000',   // Empty/Default
         };         
-        let selectedColor = 0;  // Default color value
+        let selectedColor = -1;  // Default to blue
+        let selectedBlockColor = 0;  // Default block color value
         
             // // Grid
         const gridWidthInput = document.getElementById('gridWidth');
@@ -468,6 +544,8 @@
         const DRAFTS_STORE = 'levelDrafts';
         const TEST_STORE = 'testLevel';
 
+            // // 1.4 (rotation and color-changing)
+        
 
         // ===== IndexedDB ======
             // // Initialize IndexedDB
@@ -476,6 +554,15 @@
             // // Errors
         dbInit.onerror = (event) => {
             console.error('Database error:', event.target.error);
+            db = event.target.result;
+            if (!db.objectStoreNames.contains(DRAFTS_STORE)) {
+                const store = db.createObjectStore(DRAFTS_STORE, { keyPath: 'id', autoIncrement: true });
+                store.createIndex('lastModified', 'lastModified');
+                store.createIndex('title', 'title');
+            }
+            if (!db.objectStoreNames.contains(TEST_STORE)) {
+                db.createObjectStore(TEST_STORE, { keyPath: 'id' });
+            }
         };
 
             // // Database Updates
@@ -498,7 +585,7 @@
         };
 
 
-        // ===== Grid =====
+        // ===== Grid ====
             // // Update Grid Size
         function updateGridSize() {
             const width = parseInt(gridWidthInput.value) || 100;
@@ -522,7 +609,7 @@
                         col < existingRow.length ? existingRow[col] : 0
                     );
                 } else {
-                    // New rows are initialized with zeros, first column as platform
+                    // New rows are initialized with zeros
                     return Array(width).fill(0);
                 }
             });
@@ -558,18 +645,36 @@
                     const value = levelMatrix[row][col];
                     
                     if (row === 0) {
+                        // Handle color row
+                        const colorValue = levelMatrix[0][col] || 0; // Default to 0 if empty
                         cell.className = 'cell color-row';
-                        const colorValue = value <= 0 ? value : 0; // Ensure color values are negative or 0
-                        cell.style.backgroundColor = COLOR_MAP[colorValue] || COLOR_MAP[0];
+                        cell.style.backgroundColor = COLOR_MAP[colorValue];
                     } else {
+                        // Handle game cells
                         cell.className = 'cell';
-                        if (value > 0) {
-                            switch(value) {
+                        
+                        if (value) {
+                            const properties = typeof value === 'string' ? value.split('/') : [value.toString()];
+                            const blockType = parseInt(properties[0]);
+                            
+                            // Add base class based on block type
+                            switch(blockType) {
                                 case 1: cell.classList.add('platform'); break;
                                 case 2: cell.classList.add('spike'); break;
                                 case 3: cell.classList.add('teleporter'); break;
                                 case 4: cell.classList.add('finish'); break;
                             }
+                            
+                            // Process additional properties
+                            properties.forEach(prop => {
+                                if (prop.startsWith('@')) {
+                                    const rotation = parseInt(prop.substring(1));
+                                    cell.style.transform = `rotate(${rotation}deg)`;
+                                } else if (prop.startsWith('-')) {
+                                    const colorCode = parseInt(prop);
+                                    cell.style.backgroundColor = COLOR_MAP[colorCode] || COLOR_MAP[0];
+                                }
+                            });
                         }
                     }
                     
@@ -587,13 +692,7 @@
             }
         }
 
-            // // Handle Matrix Changes
-        function hasMatrixChanged() {
-            if (!lastExportedMatrix) return levelMatrix.some(row => row.some(cell => cell !== 0));
-            return JSON.stringify(levelMatrix) !== JSON.stringify(lastExportedMatrix);
-        }
-
-            // // Handle Clicks in Grid
+             // // Handle Clicks in Grid
         function handleCellClick(e) {
             const cell = e.target;
             if (!cell.dataset.row || !cell.dataset.col) return;
@@ -601,15 +700,40 @@
             const row = parseInt(cell.dataset.row);
             const col = parseInt(cell.dataset.col);
             
-            if (currentTool === 'c' && row === 0) {
-                // Force color to be applied with full opacity
-                levelMatrix[row][col] = selectedColor;
-                cell.style.backgroundColor = COLOR_MAP[selectedColor];
-                cell.style.opacity = '1';
+            if (currentTool === 'c') {
+                if (row === 0) {
+                    // Only allow color placement in row 0
+                    levelMatrix[row][col] = selectedColor;
+                    cell.style.backgroundColor = COLOR_MAP[selectedColor];
+                    cell.style.opacity = '1';
+                    hasUnsavedChanges = true;
+                    lastExportedMatrix = null;
+                }
+                return; // Don't allow color tool to place anything outside row 0
             } else if (row === 0) {
                 return;
             } else {
-                levelMatrix[row][col] = parseInt(currentTool);
+                // Build block properties string
+                let blockValue;
+                
+                // If using color tool, treat it as a platform (2) with color
+                if (currentTool === 'c') {
+                    blockValue = '2';  // Platform type
+                } else {
+                    blockValue = currentTool;
+                }
+                
+                // Add rotation if applicable
+                if (currentRotation !== 0) {
+                    blockValue += `/@${currentRotation}`;
+                }
+                
+                // Add color if using color tool or if block color is selected
+                if ((currentTool === 'c' || selectedBlockColor !== 0) && currentTool !== '0') {
+                    blockValue += `/${currentTool === 'c' ? selectedColor : selectedBlockColor}`;
+                }
+                
+                levelMatrix[row][col] = blockValue;
             }
             
             updateGridVisuals();
@@ -626,24 +750,172 @@
                 
                 if (row === 0) {
                     // Handle color row
-                    const colorValue = levelMatrix[0][col];
+                    const colorValue = levelMatrix[0][col] || 0; // Default to 0 if empty
                     cell.className = 'cell color-row';
-                    cell.style.backgroundColor = COLOR_MAP[colorValue] || COLOR_MAP[0];
+                    cell.style.backgroundColor = COLOR_MAP[colorValue];
                 } else {
                     // Handle game cells
                     const value = levelMatrix[row][col];
                     cell.className = 'cell';
-                    switch(value) {
-                        case 0: cell.classList.add('empty'); break;
-                        case 1: cell.classList.add('platform'); break;
-                        case 2: cell.classList.add('spike'); break;
-                        case 3: cell.classList.add('teleporter'); break;
-                        case 4: cell.classList.add('finish'); break;
+                    
+                    if (value) {
+                        const properties = typeof value === 'string' ? value.split('/') : [value.toString()];
+                        const blockType = parseInt(properties[0]);
+                        
+                        // Reset styles
+                        cell.style.transform = 'none';
+                        cell.style.backgroundColor = '';
+                        
+                        // Add base class based on block type
+                        switch(blockType) {
+                            case 0: cell.classList.add('empty'); break;
+                            case 1: cell.classList.add('platform'); break;
+                            case 2: cell.classList.add('spike'); break;
+                            case 3: cell.classList.add('teleporter'); break;
+                            case 4: cell.classList.add('finish'); break;
+                        }
+                        
+                        // Process additional properties
+                        properties.forEach(prop => {
+                            if (prop.startsWith('@')) {
+                                const rotation = parseInt(prop.substring(1));
+                                cell.style.transform = `rotate(${rotation}deg)`;
+                            } else if (prop.startsWith('-')) {
+                                const colorCode = parseInt(prop);
+                                cell.style.backgroundColor = COLOR_MAP[colorCode] || COLOR_MAP[0];
+                            }
+                        });
+                    } else {
+                        cell.classList.add('empty');
                     }
                 }
             });
         }
 
+        // Add event listener for rotation buttons
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') {
+                currentRotation = (currentRotation + 90) % 360;
+            } else if (e.key === 'ArrowDown') {
+                currentRotation = (currentRotation - 90) % 360;
+            }
+        });
+
+        
+        // Add event listener for block color picker
+        const blockColorPicker = document.getElementById('blockColorPicker');
+        
+        blockColorPicker.addEventListener('change', function() {
+            selectedBlockColor = parseInt(this.value);
+            // Always switch to platform tool when selecting a color
+            const platformButton = document.querySelector('button[data-type="1"]');
+            if (platformButton) {
+                platformButton.click();
+            }
+        });
+
+        // Add event listener for section color picker
+        const sectionColorPicker = document.getElementById('colorPicker');
+        
+        sectionColorPicker.addEventListener('change', function() {
+            selectedColor = parseInt(this.value);
+            // Switch to color tool when selecting a section color
+            const colorButton = document.querySelector('button[data-type="c"]');
+            if (colorButton && !colorButton.classList.contains('active')) {
+                colorButton.click();
+            }
+            updateSelectedColorIndicator();
+        });
+
+        // Initialize color pickers
+        sectionColorPicker.innerHTML = `
+            <option value="0" selected>Black</option>
+            <option value="-1">Red</option>
+            <option value="-2">Cyan</option>
+            <option value="-3">Blue</option>
+            <option value="-4">Green</option>
+            <option value="-5">Orange</option>
+            <option value="-6">Yellow</option>
+            <option value="-7">Pink</option>
+            <option value="-8">Purple</option>
+            <option value="-9">Light Blue</option>
+        `;
+
+        blockColorPicker.innerHTML = `
+            <option value="0" selected>Default</option>
+            <option value="-1">Red</option>
+            <option value="-2">Cyan</option>
+            <option value="-3">Blue</option>
+            <option value="-4">Green</option>
+            <option value="-5">Orange</option>
+            <option value="-6">Yellow</option>
+            <option value="-7">Pink</option>
+            <option value="-8">Purple</option>
+            <option value="-9">Light Blue</option>
+        `;
+
+        // Rotation controls
+        const rotationGroup = document.getElementById('rotationGroup');
+        const rotateLeft = document.getElementById('rotateLeft');
+        const rotateRight = document.getElementById('rotateRight');
+        const rotationDisplay = document.getElementById('rotationDisplay');
+
+        function updateRotationDisplay() {
+            rotationDisplay.textContent = `${currentRotation}°`;
+        }
+
+        function rotateBlock(direction) {
+            if (!['2', '3'].includes(currentTool)) return; // Only rotate spikes and teleporters
+            currentRotation = (currentRotation + (direction * 90)) % 360;
+            if (currentRotation < 0) currentRotation += 360;
+            updateRotationDisplay();
+        }
+
+        rotateLeft.addEventListener('click', () => rotateBlock(-1));
+        rotateRight.addEventListener('click', () => rotateBlock(1));
+
+        // Keyboard controls for rotation
+        document.addEventListener('keydown', (e) => {
+            if (!['2', '3'].includes(currentTool)) return; // Only rotate spikes and teleporters
+            
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                rotateBlock(-1);
+            } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                rotateBlock(1);
+            }
+        });
+
+        // Handle Tool Selection
+        document.querySelectorAll('.tool').forEach(tool => {
+            tool.addEventListener('click', function() {
+                document.querySelectorAll('.tool').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                currentTool = this.dataset.type;
+                
+                // Show/hide color picker based on tool selection
+                const colorPickerGroup = document.getElementById('colorPickerGroup');
+                if (currentTool === 'c') {
+                    colorPickerGroup.style.display = 'block';
+                    // Set initial color if not already set
+                    if (!sectionColorPicker.value) {
+                        sectionColorPicker.value = selectedColor.toString();
+                    }
+                    updateSelectedColorIndicator();
+                } else {
+                    colorPickerGroup.style.display = 'none';
+                }
+                
+                // Show/hide rotation controls based on tool
+                const isRotatable = ['2', '3'].includes(currentTool); // Spikes and teleporters
+                rotationGroup.style.display = isRotatable ? 'block' : 'none';
+                
+                // Reset rotation when switching tools
+                if (!isRotatable) {
+                    currentRotation = 0;
+                    updateRotationDisplay();
+                }
+            });
+        });
 
         // ===== Level Registry =====
         function getLevelsRegistry() {
@@ -655,22 +927,20 @@
             // // Get Music Path
         function getMusicPath(musicValue, forExport = false, isTest = false) {
             if (musicValue === 'custom') {
-                const file = customMusicInput.files[0];
-                if (file) {
-                    if (forExport) {
-                        // For export, use the filename
-                        return `../Sound/Level Soundtracks/${file.name}`;
+                if (customMusicFile) {
+                    if (forExport || customMusicFile.isImported) {
+                        // For export or imported music, use the filename
+                        return `../Sound/Level Soundtracks/${customMusicFile.name}`;
                     } else if (!isTest) {
-                        // For preview, use Object URL
-                        return URL.createObjectURL(file);
+                        // For preview of uploaded music, create a new blob URL
+                        const blob = new Blob([customMusicFile.data], { type: customMusicFile.type });
+                        return URL.createObjectURL(blob);
                     }
-                    // For test, the path will be handled by gameloader.html
                 }
             } else {
-                // For built-in music, return the proper path
                 return `../Sound/Level Soundtracks/${musicValue}`;
             }
-            return '../Sound/Level Soundtracks/level1.mp3'; // Default fallback
+            return '../Sound/Level Soundtracks/level1.ogg';
         }
      
             // // Initialize the editor
@@ -699,17 +969,18 @@
             // Sanitize the matrix first
             const cleanMatrix = sanitizeMatrix(levelMatrix);
             
-            const musicValue = musicSelect.value || 'level1.mp3';
+            let musicValue = musicSelect.value || 'level1.ogg';
             let musicData = null;
-            
-            // If it's custom music, get the file data
-            if (musicValue === 'custom' && customMusicInput.files[0]) {
-                const file = customMusicInput.files[0];
+
+            if (musicValue === 'custom' && customMusicFile) {
+                // Use the stored custom music file data
                 musicData = {
-                    name: file.name,
-                    type: file.type,
-                    data: await file.arrayBuffer()
+                    name: customMusicFile.name,
+                    type: customMusicFile.type,
+                    data: customMusicFile.data
                 };
+            } else if (musicValue !== 'custom') {
+                musicValue = `../Sound/Level Soundtracks/${musicValue}`;
             }
             
             const testData = {
@@ -738,145 +1009,250 @@
         // ===== Color =====
             // // Color Indicator Updates
         function updateSelectedColorIndicator() {
-            const colorCell = document.querySelector('.cell.color-row');
-            if (colorCell) {
-                colorCell.style.backgroundColor = COLOR_MAP[selectedColor] || COLOR_MAP[0];
-            }
+            const colorCells = document.querySelectorAll('.cell.color-row');
+            colorCells.forEach(cell => {
+                if (cell.style.backgroundColor === '') {
+                    cell.style.backgroundColor = COLOR_MAP[selectedColor];
+                }
+            });
         }
+
             // // Color Selection Handler
         function handleColorSelection(colorNum) {
-            selectedColor = -colorNum;
+            selectedColor = colorNum;
+            sectionColorPicker.value = colorNum.toString();
             updateSelectedColorIndicator();
+            // Switch to color tool
+            const colorButton = document.querySelector('button[data-type="c"]');
+            if (colorButton && !colorButton.classList.contains('active')) {
+                colorButton.click();
+            }
         }
 
             // // Color Picker
         const colorPicker = document.getElementById('colorPicker');
         colorPicker.innerHTML = `
-            <option value="1">Black</option>
-            <option value="2">Purple</option>
-            <option value="3">Green</option>
-            <option value="4">Red</option>
-            <option value="5">Blue</option>
+            <option value="0">Black</option>
+            <option value="-1">Red</option>
+            <option value="-2">Cyan</option>
+            <option value="-3">Blue</option>
+            <option value="-4">Green</option>
+            <option value="-5">Orange</option>
+            <option value="-6">Yellow</option>
+            <option value="-7">Pink</option>
+            <option value="-8">Purple</option>
+            <option value="-9">Light Blue</option>
         `;
-
         
         // ===== Importing Functionality =====
         function importMatrix() {
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
-            fileInput.accept = '.js,.txt,application/json';
+            fileInput.accept = '.js,.txt,application/json,.zip';
             
-            fileInput.onchange = function(e) {
+            fileInput.onchange = async function(e) {
                 const file = e.target.files[0];
-                const reader = new FileReader();
                 
-                reader.onload = function(e) {
+                if (file.name.endsWith('.zip')) {
+                    // Handle ZIP file
+                    const zip = new JSZip();
                     try {
-                        const content = e.target.result;
-                        let parsed;
+                        const zipContent = await zip.loadAsync(file);
                         
-                        // Try to extract matrix from different formats
-                        if (content.includes('window.levelData')) {
-                            // Extract the entire levelData object
-                            const levelDataMatch = content.match(/window\.levelData\s*=\s*({[\s\S]*?});/);
-                            if (levelDataMatch) {
-                                // Parse the levelData object
-                                const levelData = Function(`return ${levelDataMatch[1]}`)();
-                                parsed = levelData.matrix;
-                                
-                                // Update level name if available
-                                if (levelData.title) {
-                                    document.getElementById('levelName').value = levelData.title;
-                                }
-                                
-                                // Update author name if available
-                                if (levelData.author) {
-                                    document.getElementById('authorName').value = levelData.author;
-                                }
-                                
-                                // Update difficulty if available
-                                if (levelData.difficulty) {
-                                    const difficultySelect = document.getElementById('difficulty');
-                                    Array.from(difficultySelect.options).forEach(option => {
-                                        if (option.value === levelData.difficulty) {
-                                            option.selected = true;
-                                        }
-                                    });
-                                }
-                                
-                                // Update music selection if available
-                                if (levelData.music) {
-                                    const musicPath = levelData.music.split('/').pop();
-                                    const musicSelect = document.getElementById('musicSelect');
-                                    Array.from(musicSelect.options).forEach(option => {
-                                        if (option.value === musicPath) {
-                                            option.selected = true;
-                                        }
-                                    });
-                                }
+                        // Find the level file (should be in Levels directory)
+                        let levelFile = null;
+                        let musicFile = null;
+                        
+                        for (const path in zipContent.files) {
+                            if (path.startsWith('Levels/') && path.endsWith('.js')) {
+                                levelFile = zipContent.files[path];
+                            } else if (path.startsWith('Sound/Level Soundtracks/')) {
+                                musicFile = zipContent.files[path];
                             }
-                        } else if (content.includes('matrix:')) {
-                            // Handle matrix: [...] format
-                            const matrixMatch = content.match(/matrix:\s*(\[[\s\S]*?\])/);
-                            if (matrixMatch) {
-                                parsed = JSON.parse(matrixMatch[1].replace(/\s+/g, ''));
+                        }
+                        
+                        if (!levelFile) {
+                            alert('No level file found in ZIP!');
+                            return;
+                        }
+                        
+                        // Read the level file content
+                        const content = await levelFile.async('text');
+                        
+                        // If there's a music file, read it
+                        if (musicFile) {
+                            const musicData = await musicFile.async('arraybuffer');
+                            const blob = new Blob([musicData], { type: 'audio/mpeg' });
+                            
+                            customMusicFile = {
+                                name: musicFile.name.split('/').pop(),
+                                type: 'audio/mpeg',
+                                data: musicData,
+                                isImported: false // Not imported since we have the actual file
+                            };
+                        
+                            // Create custom option if it doesn't exist
+                            if (!musicSelect.querySelector('option[value="custom"]')) {
+                                const option = document.createElement('option');
+                                option.value = 'custom';
+                                option.text = 'Custom: ' + customMusicFile.name;
+                                musicSelect.add(option);
+                            } else {
+                                // Update existing custom option text
+                                const customOption = musicSelect.querySelector('option[value="custom"]');
+                                customOption.text = 'Custom: ' + customMusicFile.name;
                             }
-                        } else {
-                            // Try direct JSON array
-                            parsed = JSON.parse(content);
+                            musicSelect.value = 'custom';
+                        
+                            // Update music preview with blob URL
+                            const musicPreview = document.getElementById('musicPreview');
+                            if (musicPreview.src.startsWith('blob:')) {
+                                URL.revokeObjectURL(musicPreview.src);
+                            }
+                            musicPreview.src = URL.createObjectURL(blob);
                         }
-
-                        if (Array.isArray(parsed) && Array.isArray(parsed[0])) {
-                            // Update grid dimensions to match imported matrix
-                            GRID_HEIGHT = parsed.length;
-                            GRID_WIDTH = parsed[0].length;
-                            gridWidthInput.value = GRID_WIDTH;
-                            gridHeightInput.value = GRID_HEIGHT;
-                            hasUnsavedChanges = true;
-                            lastExportedMatrix = null;
-                            
-                            // Update level matrix
-                            levelMatrix = parsed;
-                            
-                            // Recreate grid with new dimensions and data
-                            createGrid();
-                            updateGridVisuals();
-                        } else {
-                            throw new Error('Invalid matrix format');
-                        }
-                    } catch (e) {
-                        alert('Invalid matrix format! ' + e.message);
-                        console.error(e);
+                        
+                        // Process the level file content
+                        processImportedContent(content);
+                        
+                    } catch (error) {
+                        console.error('Error reading ZIP:', error);
+                        alert('Error reading ZIP file!');
                     }
-                };
-                
-                reader.readAsText(file);
+                } else {
+                    // Handle regular file
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        processImportedContent(e.target.result);
+                    };
+                    reader.readAsText(file);
+                }
             };
-            
             fileInput.click();
         }
 
+            // // Process the imported stuff
+        // Helper function to process imported content
+        function processImportedContent(content) {
+            try {
+                let parsed;
+                
+                // Try to extract matrix from different formats
+                if (content.includes('window.levelData')) {
+                    // Extract the entire levelData object
+                    const levelDataMatch = content.match(/window\.levelData\s*=\s*({[\s\S]*?});/);
+                    if (levelDataMatch) {
+                        // Parse the levelData object
+                        const levelData = Function(`return ${levelDataMatch[1]}`)();
+                        parsed = levelData.matrix;
+                        
+                        // Update level name if available
+                        if (levelData.title) {
+                            document.getElementById('levelName').value = levelData.title;
+                        }
+                        
+                        // Update author name if available
+                        if (levelData.author) {
+                            document.getElementById('authorName').value = levelData.author;
+                        }
+                        
+                        // Update difficulty if available
+                        if (levelData.difficulty) {
+                            const difficultySelect = document.getElementById('difficulty');
+                            Array.from(difficultySelect.options).forEach(option => {
+                                if (option.value === levelData.difficulty) {
+                                    option.selected = true;
+                                }
+                            });
+                        }
+                        
+                        // Update music selection if available
+                        if (levelData.music && !customMusicFile) { // Only update if we don't already have a music file from ZIP
+                            const musicPath = levelData.music;
+                            if (musicPath.startsWith('../Sound/Level Soundtracks/')) {
+                                const musicFile = musicPath.split('/').pop();
+                                // Check if it's a built-in music file
+                                if (musicSelect.querySelector(`option[value="${musicFile}"]`)) {
+                                    musicSelect.value = musicFile;
+                                } else {
+                                    // It's a custom music file
+                                    // Create custom option if it doesn't exist
+                                    if (!musicSelect.querySelector('option[value="custom"]')) {
+                                        const option = document.createElement('option');
+                                        option.value = 'custom';
+                                        option.text = 'Custom: ' + musicFile;
+                                        musicSelect.add(option);
+                                    } else {
+                                        // Update existing custom option text
+                                        const customOption = musicSelect.querySelector('option[value="custom"]');
+                                        customOption.text = 'Custom: ' + musicFile;
+                                    }
+                                    musicSelect.value = 'custom';
+                                    
+                                    // Only create customMusicFile if we don't already have it from ZIP
+                                    if (!customMusicFile) {
+                                        customMusicFile = {
+                                            name: musicFile,
+                                            type: 'audio/mpeg',
+                                            isImported: true // Flag to indicate this was imported
+                                        };
+                                    }
+                                }
+                            }
+                            // Update music preview
+                            const musicPreview = document.getElementById('musicPreview');
+                            musicPreview.src = getMusicPath(musicSelect.value);
+                        }
+                    }
+                } else if (content.includes('matrix:')) {
+                    // Handle matrix: [...] format
+                    const matrixMatch = content.match(/matrix:\s*(\[[\s\S]*?\])/);
+                    if (matrixMatch) {
+                        parsed = JSON.parse(matrixMatch[1].replace(/\s+/g, ''));
+                    }
+                } else {
+                    // Try direct JSON array
+                    parsed = JSON.parse(content);
+                }
+        
+                if (Array.isArray(parsed) && Array.isArray(parsed[0])) {
+                    // Update grid dimensions to match imported matrix
+                    GRID_HEIGHT = parsed.length;
+                    GRID_WIDTH = parsed[0].length;
+                    gridWidthInput.value = GRID_WIDTH;
+                    gridHeightInput.value = GRID_HEIGHT;
+                    hasUnsavedChanges = true;
+                    lastExportedMatrix = null;
+                    
+                    // Update level matrix
+                    levelMatrix = parsed;
+                    
+                    // Recreate grid with new dimensions and data
+                    createGrid();
+                    updateGridVisuals();
+                } else {
+                    throw new Error('Invalid matrix format');
+                }
+            } catch (e) {
+                alert('Invalid matrix format! ' + e.message);
+                console.error(e);
+            }
+        }
        
         // ===== Draft Functionality =====
             // // Function to save current level as draft
         async function saveDraft(title = 'Untitled Draft') {
             try {
-                // Clean the matrix - ensure only numbers
-                const cleanMatrix = levelMatrix.map(row => 
-                    row.map(cell => {
-                        // Convert to number, default to 0 if not a valid number
-                        const num = Number(cell);
-                        return isNaN(num) ? 0 : num;
-                    })
-                );
 
+                const musicValue = document.getElementById('musicSelect').value;
                 const draftData = {
-                    title: levelNameInput.value || title,
-                    matrix: cleanMatrix,
+                    title: levelNameInput.value || "untitled",
+                    matrix: levelMatrix,
                     author: document.getElementById('authorName').value || 'Unknown Author',
                     difficulty: document.getElementById('difficulty').value || 'Normal',
-                    musicValue: document.getElementById('musicSelect').value || 'level1.mp3',
-                    lastModified: new Date().toISOString()
+                    musicValue: musicValue || 'level1.ogg',
+                    lastModified: new Date().toISOString(),
+                    customMusicFile: customMusicFile
                 };
 
                 // Debug log
@@ -904,6 +1280,11 @@
             request.onsuccess = () => {
                 const draft = request.result;
                 if (draft) {
+                    // Update current draft indicator
+                    currentDraftId = draftId;
+                    currentDraftIndicator.style.display = 'block';
+                    currentDraftIndicator.querySelector('span').textContent = draft.title;
+
                     levelMatrix = draft.matrix;
                     GRID_HEIGHT = draft.matrix.length;
                     GRID_WIDTH = draft.matrix[0].length;
@@ -918,21 +1299,78 @@
                     gridContainer.style.height = containerHeight + 'px';
                     
                     // Update other fields
-                    levelNameInput.value = draft.title;
+                    levelNameInput.value = draft.title || '';
                     document.getElementById('authorName').value = draft.author || '';
                     document.getElementById('difficulty').value = draft.difficulty || 'Normal';
-                    musicSelect.value = draft.musicValue || 'level1.mp3';
                     
-                    // Update grid
-                    document.documentElement.style.setProperty('--grid-width', GRID_WIDTH);
-                    document.documentElement.style.setProperty('--grid-height', GRID_HEIGHT);
+                    // Update music selection and handle custom music
+                    const musicSelect = document.getElementById('musicSelect');
+                    const musicPreview = document.getElementById('musicPreview');
+                    
+                    if (draft.musicValue === 'custom' && draft.customMusicFile && draft.customMusicFile.data) {
+                        try {
+                            customMusicFile = draft.customMusicFile;
+                            
+                            // Create blob for playback
+                            const blob = new Blob([draft.customMusicFile.data], { type: draft.customMusicFile.type });
+                            const audioUrl = URL.createObjectURL(blob);
+                            
+                            // Add custom option to select
+                            const option = document.createElement('option');
+                            option.value = 'custom';
+                            option.text = 'Custom: ' + draft.customMusicFile.name;
+                            
+                            // Remove any existing custom option
+                            Array.from(musicSelect.options).forEach(opt => {
+                                if (opt.value === 'custom') musicSelect.removeChild(opt);
+                            });
+                            
+                            musicSelect.add(option);
+                            musicSelect.value = 'custom';
+                            
+                            // Update audio preview - set the source before revoking old URL
+                            const oldSrc = musicPreview.src;
+                            musicPreview.src = audioUrl;
+                            
+                            // Now safe to revoke old URL if it was a blob
+                            if (oldSrc.startsWith('blob:')) {
+                                URL.revokeObjectURL(oldSrc);
+                            }
+                            
+                            console.log('Custom music loaded successfully:', {
+                                name: draft.customMusicFile.name,
+                                type: draft.customMusicFile.type,
+                                dataSize: draft.customMusicFile.data.byteLength,
+                                url: audioUrl
+                            });
+                        } catch (error) {
+                            console.error('Error loading custom music:', error);
+                            customMusicFile = null;
+                            musicSelect.value = 'level1.ogg';
+                            musicPreview.src = '../Sound/Level Soundtracks/level1.ogg';
+                        }
+                    } else {
+                        customMusicFile = null;
+                        musicSelect.value = draft.musicValue || 'level1.ogg';
+                        musicPreview.src = `../Sound/Level Soundtracks/${draft.musicValue}`;
+                    }
+                    
                     createGrid();
-                    updateGridVisuals();
-                    
-                    alert('Draft loaded successfully!');
+                    hasUnsavedChanges = false;
+                    lastExportedMatrix = null;
                 }
             };
         }
+
+        // Add event listeners to clear current draft indicator when changes are made
+        function clearCurrentDraftIndicator() {
+            currentDraftId = null;
+            currentDraftIndicator.style.display = 'none';
+            hasUnsavedChanges = true;
+        }
+
+  
+        
 
             // // Delete Drafts
         async function deleteDraft(draftId) {
@@ -980,17 +1418,12 @@
         function scheduleAutoSave() {
             clearTimeout(autoSaveTimeout);
             autoSaveTimeout = setTimeout(() => {
-                if (hasMatrixChanged()) {
+                if (hasMatrixChanged) {
                     saveDraft();
                 }
             }, 30000); // Auto-save after 30 seconds of inactivity
         }
-                // // // Update existing functions to trigger auto-save
-        const originalUpdateCell = updateCell;
-        updateCell = function(row, col, value) {
-            originalUpdateCell(row, col, value);
-            scheduleAutoSave();
-        };
+        
 
             // // Draft Event Listeners
                 // // // Add event listener for save draft button
@@ -1006,11 +1439,14 @@
             levelMatrix[row][col] = value;
             hasUnsavedChanges = true;
             updateGridVisuals();
+            const originalUpdateCell = updateCell;
+            originalUpdateCell(row, col, value);
+            scheduleAutoSave();
         }
             
             // // Unsaved Changes Check
         window.addEventListener('beforeunload', (e) => {
-            if (hasMatrixChanged()) {
+            if (hasMatrixChanged) {
                 e.preventDefault();
                 // Most browsers will show their own message, but a custom one for older browsers
                  e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
@@ -1034,25 +1470,44 @@
 
             // // Custom Music File Selection
         customMusicInput.addEventListener('change', function(e) {
-            if (e.target.files.length > 0) {
-                customMusicFile = e.target.files[0];
-                // Update music select to show custom file name
-                const option = document.createElement('option');
-                option.value = 'custom';
-                option.text = 'Custom: ' + customMusicFile.name;
-                option.selected = true;
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
                 
-                // Remove any existing custom option
-                Array.from(musicSelect.options).forEach(opt => {
-                    if (opt.value === 'custom') musicSelect.removeChild(opt);
-                });
+                reader.onload = function(e) {
+                    // Store the file data and metadata
+                    customMusicFile = {
+                        name: file.name,
+                        type: file.type,
+                        data: e.target.result  // This will be an ArrayBuffer
+                    };
+                    
+                    // Update music select to show custom file name
+                    const option = document.createElement('option');
+                    option.value = 'custom';
+                    option.text = 'Custom: ' + file.name;
+                    
+                    // Remove any existing custom option
+                    Array.from(musicSelect.options).forEach(opt => {
+                        if (opt.value === 'custom') musicSelect.removeChild(opt);
+                    });
+                    
+                    musicSelect.add(option);
+                    musicSelect.value = 'custom';
+                    
+                    // Create blob URL for preview
+                    const blob = new Blob([e.target.result], { type: file.type });
+                    const audioUrl = URL.createObjectURL(blob);
+                    musicPreview.src = audioUrl;
+                    
+                    // Reset preview button
+                    previewMusicBtn.textContent = 'Preview Music';
+                    musicPreview.pause();
+                    musicPreview.currentTime = 0;
+                };
                 
-                musicSelect.add(option);
-                
-                // Reset preview button
-                previewMusicBtn.textContent = 'Preview Music';
-                musicPreview.pause();
-                musicPreview.currentTime = 0;
+                // Read the file as ArrayBuffer
+                reader.readAsArrayBuffer(file);
             }
         });
 
@@ -1064,8 +1519,19 @@
             // // Clear Grid
         clearBtn.addEventListener('click', () => {
             if (confirm('Are you sure you want to clear the grid?')) {
-                levelMatrix = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(0));
-                updateGridVisuals();
+                // Create a new matrix with all cells empty (0)
+                const oldColorRow = [...levelMatrix[0]]; // Save the color row
+                levelMatrix = Array(GRID_HEIGHT).fill().map((_, rowIndex) => {
+                    // For row 0 (color row), keep the existing colors
+                    if (rowIndex === 0) return oldColorRow;
+                    
+                    // For all other rows, ensure we use string '0' to match the format
+                    // used when setting cell values elsewhere
+                    return Array(GRID_WIDTH).fill('0');
+                });
+                
+                // Force a complete visual refresh
+                createGrid(); // This will properly reset all cells
                 hasUnsavedChanges = false;
                 lastExportedMatrix = null;
             }
@@ -1097,9 +1563,10 @@ window.levelData = {
             zip.file(`Levels/level${levelId}.js`, jsContent);
             
             // If using custom music, add it to the zip
-            if (musicSelect.value === 'custom' && customMusicInput.files[0]) {
-                const musicFile = customMusicInput.files[0];
-                zip.file(`Sound/Level Soundtracks/${musicFile.name}`, musicFile);
+            if (musicSelect.value === 'custom' && customMusicFile) {
+                // Use the stored custom music file data
+                const blob = new Blob([customMusicFile.data], { type: customMusicFile.type });
+                zip.file(`Sound/Level Soundtracks/${customMusicFile.name}`, blob);
             }
 
             // Create README content
@@ -1146,10 +1613,10 @@ window.levelData = {
             // // Preview Music 
         previewMusicBtn.addEventListener('click', () => {
             if (musicPreview.paused) {
-                // Revoke previous Object URL if it exists
-                if (musicPreview.src.startsWith('blob:')) {
-                    URL.revokeObjectURL(musicPreview.src);
-                }
+                // // Revoke previous Object URL if it exists
+                // if (musicPreview.src.startsWith('blob:')) {
+                //     URL.revokeObjectURL(musicPreview.src);
+                // }
                 
                 const musicPath = getMusicPath(musicSelect.value);
                 musicPreview.src = musicPath;
@@ -1188,6 +1655,16 @@ window.levelData = {
                 // Show/hide color picker based on tool selection
                 const colorPickerGroup = document.getElementById('colorPickerGroup');
                 colorPickerGroup.style.display = currentTool === 'c' ? 'block' : 'none';
+                
+                // Show/hide rotation controls based on tool
+                const isRotatable = ['2', '3'].includes(currentTool); // Spikes and teleporters
+                rotationGroup.style.display = isRotatable ? 'block' : 'none';
+                
+                // Reset rotation when switching tools
+                if (!isRotatable) {
+                    currentRotation = 0;
+                    updateRotationDisplay();
+                }
             });
         });
 
@@ -1203,7 +1680,7 @@ window.levelData = {
 
             // // Back to Menu Button
         document.getElementById('backToMenuBtn').addEventListener('click', () => {
-            if (hasMatrixChanged()) {
+            if (hasMatrixChanged) {
                 if (confirm('You have unsaved changes. Are you sure you want to leave?')) {
                     window.location.href = '../index.html';
                 }
@@ -1211,6 +1688,21 @@ window.levelData = {
                 window.location.href = '../index.html';
             }
         });
+
+            // // Anti Arrow Scroll
+        window.addEventListener("keydown", function(e) {
+            if([37, 38, 39, 40].indexOf(e.keyCode) > -1) {
+                e.preventDefault();
+            }
+        });
+    
+        gridContainer.addEventListener('click', clearCurrentDraftIndicator);
+        levelNameInput.addEventListener('input', clearCurrentDraftIndicator);
+        document.getElementById('authorName').addEventListener('input', clearCurrentDraftIndicator);
+        document.getElementById('difficulty').addEventListener('change', clearCurrentDraftIndicator);
+        document.getElementById('musicSelect').addEventListener('change', clearCurrentDraftIndicator);
+        customMusicInput.addEventListener('change', clearCurrentDraftIndicator);
+        
     </script>
 </body>
 </html>

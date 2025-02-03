@@ -32,6 +32,7 @@
             color: white;
             font-family: 'Orbitron', sans-serif;
             overflow: hidden;
+            touch-action: manipulation;
         }
 
         /* Menu Containers */
@@ -39,8 +40,8 @@
         .options-menu,
         .level-selector {
             background-color: var(--bg-darker);
-            padding: clamp(20px, calc(30px * var(--menu-scale)), 60px);
-            border-radius: clamp(10px, calc(15px * var(--menu-scale)), 30px);
+            padding: clamp(20px, calc(15px * var(--menu-scale)), 30px);
+            border-radius: clamp(10px, calc(15px * var(--menu-scale)), 20px);
             box-shadow: var(--shadow-glow);
             text-align: center;
             opacity: 1;
@@ -55,18 +56,25 @@
         }
 
         .level-selector {
-            width: clamp(500px, calc(90% * var(--menu-scale)), 1400px);
-            min-height: clamp(40vh, calc(60vh * var(--menu-scale)), 80vh);
+            width: clamp(500px, calc(95% * var(--menu-scale)), 1900px);
+            min-width: 1000px;
+            height: clamp(20vh, calc(30vh * var(--menu-scale)), 60vh);
+            min-height: 720px;
             display: flex;
             flex-direction: column;
             position: absolute;
             left: 50%;
             top: 50%;
+            zoom: var(--menu-scale);
+
+            
             transform: translate(-50%, -50%) scale(var(--menu-scale));
             background-color: var(--bg-darker);
-            padding: clamp(20px, calc(30px * var(--menu-scale)), 60px);
-            border-radius: clamp(10px, calc(15px * var(--menu-scale)), 30px);
+            padding: clamp(15px, calc(25px * var(--menu-scale)), 60px);
+            border-radius: clamp(10px, calc(15px * var(--menu-scale)), 90px);
             box-shadow: var(--shadow-glow);
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         /* Container for level selectors */
@@ -283,7 +291,7 @@
 <body>
     <!-- Background music -->
     <audio id="menu-music" loop preload="auto">
-        <source src="Sound/Basic Soundeffects/menutd.mp3" type="audio/mp3">
+        <source src="Sound/Basic Soundeffects/menutd.ogg" type="audio/ogg">
     </audio>
 
     <!-- Main Menu -->
@@ -464,6 +472,12 @@
                         db.createObjectStore(STORE_NAME, { keyPath: 'filename' });
                         console.log('Object store created');
                     }
+                    
+                    if (!db.objectStoreNames.contains('scores')) {
+                        db.createObjectStore('scores');
+                        console.log("Scores object store created");
+                    }
+                    
                 };
             });
         }
@@ -584,35 +598,75 @@
 
         // ===== Level Preview System =====
 
-        // // Colors
         const TILE_COLORS = {
-            '-5': '#1a1a2e', // Background
-            '0': '#000000',  // Empty
-            '1': '#4285F4',  // Platform (blue)
-            '2': '#ff0000',  // Spike (red)
-            '3': '#9932CC',  // Teleporter (purple)
-            '4': '#00ff00',  // Finish (green)
+            '-1': '#ff6b6b',  // Red
+            '-2': '#4ecdc4',  // Cyan
+            '-3': '#45b7d1',  // Blue
+            '-4': '#96ceb4',  // Green
+            '-5': '#ff9f1c',  // Orange
+            '-6': '#ffbe0b',  // Yellow
+            '-7': '#ff006e',  // Pink
+            '-8': '#8338ec',  // Purple
+            '-9': '#3a86ff',  // Light Blue
+            '0': '#000000',   // Empty
+            '1': '#45b7d1',   // Platform
+            '2': '#ff6b6b',   // Spike
+            '3': '#9932CC',   // Teleporter
+            '4': '#00ff00'    // Finish
         };
 
-        // // Drawing Functions
-        function drawSpike(ctx, x, y, size) {
-            ctx.beginPath();
-            ctx.moveTo(x, y + size);
-            ctx.lineTo(x + size / 2, y);
-            ctx.lineTo(x + size, y + size);
-            ctx.closePath();
-            ctx.fillStyle = TILE_COLORS['2'];
-            ctx.fill();
+        function parseBlockProperties(block) {
+            if (typeof block !== 'string') {
+                return { type: block, color: null, rotation: 0 };
+            }
+
+            const props = block.split('/');
+            const type = parseInt(props[0]);
+            let color = null;
+            let rotation = 0;
+
+            props.slice(1).forEach(prop => {
+                if (prop.startsWith('-')) {
+                    color = TILE_COLORS[prop];
+                } else if (prop.startsWith('@')) {
+                    rotation = parseInt(prop.substring(1));
+                }
+            });
+
+            return { type, color, rotation };
         }
 
-        function drawTeleporter(ctx, x, y, size) {
-            ctx.fillStyle = TILE_COLORS['3'];
-            ctx.fillRect(x, y, size, size);
+        function drawSpike(ctx, x, y, size, color = '#ff6b6b', rotation = 0) {
+            ctx.save();
+            ctx.translate(x + size/2, y + size/2);
+            ctx.rotate((rotation * Math.PI) / 180);
+            
+            ctx.beginPath();
+            ctx.moveTo(-size/2, size/2);  // Bottom left
+            ctx.lineTo(0, -size/2);       // Top middle
+            ctx.lineTo(size/2, size/2);   // Bottom right
+            ctx.closePath();
+            
+            ctx.fillStyle = color;
+            ctx.fill();
+            
+            ctx.restore();
+        }
+
+        function drawTeleporter(ctx, x, y, size, color = '#9932CC') {
+            const radius = size / 3;
+            ctx.beginPath();
+            ctx.arc(x + size/2, y + size/2, radius, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
         }
 
         function drawFinishLine(ctx, x, y, size) {
-            ctx.fillStyle = TILE_COLORS['4'];
-            ctx.fillRect(x, y, size, size);
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(x, y, size/4, size);
         }
 
         function generateLevelPreview(matrix) {
@@ -621,11 +675,11 @@
             canvas.height = 150;
             const ctx = canvas.getContext('2d');
 
-            // Get 20x17 preview section
+            // Get preview section dimensions
             const previewRows = Math.min(20, matrix.length);
             const previewCols = Math.min(17, matrix[0].length);
 
-            // Calculate tile size for the 20x17 grid
+            // Calculate tile size
             const tileSize = Math.min(
                 canvas.width / previewCols,
                 canvas.height / previewRows
@@ -636,25 +690,33 @@
             const offsetY = (canvas.height - (previewRows * tileSize)) / 2;
 
             // Draw background
-            ctx.fillStyle = TILE_COLORS['-5'];
+            ctx.fillStyle = '#1a1a2e';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw level tiles (only first 10x10)
+            // Draw level tiles
             for (let y = 0; y < previewRows; y++) {
                 for (let x = 0; x < previewCols; x++) {
+                    const block = matrix[y][x];
+                    const { type, color, rotation } = parseBlockProperties(block);
                     const tileX = offsetX + (x * tileSize);
                     const tileY = offsetY + (y * tileSize);
-                    const tile = matrix[y][x];
 
-                    if (tile === 1) {
-                        ctx.fillStyle = TILE_COLORS['1'];
-                        ctx.fillRect(tileX, tileY, tileSize, tileSize);
-                    } else if (tile === 2) {
-                        drawSpike(ctx, tileX, tileY, tileSize);
-                    } else if (tile === 3) {
-                        drawTeleporter(ctx, tileX, tileY, tileSize);
-                    } else if (tile === 4) {
-                        drawFinishLine(ctx, tileX, tileY, tileSize);
+                    if (type === 0) continue;  // Skip empty tiles
+
+                    switch(type) {
+                        case 1:  // Platform
+                            ctx.fillStyle = color || TILE_COLORS['1'];
+                            ctx.fillRect(tileX, tileY, tileSize, tileSize);
+                            break;
+                        case 2:  // Spike
+                            drawSpike(ctx, tileX, tileY, tileSize, color || TILE_COLORS['2'], rotation);
+                            break;
+                        case 3:  // Teleporter
+                            drawTeleporter(ctx, tileX, tileY, tileSize, color || TILE_COLORS['3']);
+                            break;
+                        case 4:  // Finish line
+                            drawFinishLine(ctx, tileX, tileY, tileSize);
+                            break;
                     }
                 }
             }
@@ -662,7 +724,6 @@
             return canvas;
         }
 
-        // // Draw complete level preview
         function drawLevelPreview(level) {
             if (!level || !level.matrix) {
                 console.error('Invalid level data for preview:', level);
@@ -797,12 +858,21 @@
         function updateMenuScale() {
             const width = window.innerWidth;
             const height = window.innerHeight;
-            const smallestDimension = Math.min(width, height);
-
-            // Calculate scale based on screen size, with a larger base size
-            let scale = smallestDimension / 800;
-            scale = Math.max(0.8, Math.min(scale, 2.0));
-
+            
+            // Base dimensions that we want to scale from
+            const baseWidth = 1200;  // Original menu width
+            const baseHeight = 600;  // Approximate original menu height
+            
+            // Calculate scale based on both dimensions
+            const widthScale = (width * 0.95) / baseWidth;  // Use 95% of screen width
+            const heightScale = (height * 0.95) / baseHeight;  // Use 95% of screen height
+            
+            // Use the smaller scale to ensure menu fits both dimensions
+            let scale = Math.min(widthScale, heightScale);
+            
+            // Clamp the scale between 0.15 and 1.5 for better visibility
+            scale = Math.max(0.15, Math.min(scale, 1.5));
+            
             document.documentElement.style.setProperty('--menu-scale', scale);
         }
 
@@ -811,6 +881,7 @@
 
         // Update scale on window resize
         window.addEventListener('resize', updateMenuScale);
+
     </script>
 </body>
 
