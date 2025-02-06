@@ -114,6 +114,12 @@
             margin: clamp(8px, calc(12px * var(--menu-scale)), 24px) 0;
         }
 
+        h3 {
+            font-size: clamp(1.5rem, calc(1.8rem * var(--menu-scale)), 2.8rem);
+            margin: clamp(12px, calc(16px * var(--menu-scale)), 32px) 0;
+            color: var(--primary-color);
+        }
+
         /* Buttons */
         button {
             width: 100%;
@@ -321,9 +327,15 @@
 
     <!-- Options Menu -->
     <div class="options-menu" style="display: none;">
-        <h1>Volume Control</h1>
+        <h1>Settings</h1>
+        <div style="border-top: 1px solid #ccc; width: 100%; margin: 0 auto;"></div>
+        <h3>Volume Control</h3>
         <input type="range" id="volume-slider" min="0" max="100" value="50" oninput="updateVolumeLabel()">
         <p>Volume: <span id="volume-label">50</span>%</p>
+        <div style="border-top: 1px solid #ccc; width: 70%; margin: 0 auto;"></div>
+        <h3>Clear Data</h3>
+        <button onclick="clearData();">Clear All Data</button>
+        <div style="border-top: 1px solid #ccc; width: 70%; margin: 0 auto;"></div>
         <button onclick="handleMenuTransition('options-menu', 'menu')">Back</button>
     </div>
 
