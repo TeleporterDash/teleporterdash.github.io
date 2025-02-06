@@ -324,7 +324,7 @@
             Game Over!
             <br>
             <button id="restartBtn">Try Again</button>
-            <button onclick="window.location.href='../index.html'"
+            <button onclick="window.location.href='../TDMenu.html'"
                 style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin-top: 10px; cursor: pointer;">Back
                 to Menu</button>
         </div>
@@ -398,7 +398,7 @@
                 style="background: #00ff00; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Resume</button>
             <button id="restartFromPauseBtn"
                 style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Restart</button>
-            <button onclick="window.location.href='../index.html'"
+            <button onclick="window.location.href='../TDMenu.html'"
                 style="background: #ff4444; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Exit
                 to Menu</button>
         </div>
@@ -409,7 +409,7 @@
         <button id="nextLevelBtn"
             style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Next
             Level</button>
-        <button onclick="window.location.href='../index.html'"
+        <button onclick="window.location.href='../TDMenu.html'"
             style="background: #4285F4; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin: 10px; cursor: pointer;">Back
             to Menu</button>
     </div>
@@ -927,6 +927,9 @@
                     levelMusic = URL.createObjectURL(blob);
                 } else if (isPracticeMode) {
                     levelMusic = '../Sound/Basic Soundeffects/practicetd.ogg';
+                } else if (data.musicValue && data.musicValue.startsWith('../Sound/Level Soundtracks/')) {
+                    levelMusic = `${data.musicValue}`;
+                    console.log("Level Soundtrack: ", levelMusic);
                 } else if (data.musicValue) {
                     levelMusic = `../Sound/Level Soundtracks/${data.musicValue}`;
                     console.log("Level Soundtrack: ", levelMusic);
@@ -1977,36 +1980,39 @@
          * Called from updateGame when new obstacles are created
          * Throttled to avoid performance issues
          */
-        function updateProgress() {
+         function updateProgress() {
             if (!levelMatrix || levelMatrix.length === 0) return;
 
             const currentTime = Date.now();
             if (currentTime - lastProgressUpdate < progressUpdateInterval) return;
 
             // Calculate progress based on current column position
-            let progress = 0;
-            if (totalBlocks > 0) {
-                progress = Math.min((passedBlocks / totalBlocks) * 100, 100);
-            }
-            const numSections = colorSteps.length - 1;
-            const sectionSize = 100 / numSections;
-            colorIndex = Math.min(Math.floor(progress / sectionSize), numSections - 1);
-            const sectionStart = colorIndex * sectionSize;
-            transitionFactor = (progress - sectionStart) / sectionSize;
+            const totalColumns = levelMatrix[0].length;
+            const delayColumns = 3; // Creates a 2-second delay for smoother progress
+            const adjustedColumn = Math.max(0, currentColumn - delayColumns);
+
+            // Calculate progress with finer granularity
+            const progress = (adjustedColumn / totalColumns) * 100;
+            const clampedProgress = Math.min(Math.round(progress), 99); // Cap at 99% until complete
+
+            // Only show 100% when level is actually complete
+            const finalProgress = isLevelComplete ? 100 :
+                progress >= 98 ? 99 : // Force 99% when near the end
+                    clampedProgress;
 
             // Update UI elements
             const progressText = document.getElementById('progressText');
             const progressFill = document.getElementById('progressFill');
 
-            progressText.textContent = `${progress}%`;
-            progressFill.style.width = `${progress}%`;
+            progressText.textContent = `${finalProgress}%`;
+            progressFill.style.width = `${finalProgress}%`;
 
             // Update progress bar colors based on completion
-            if (progress > 75) {
+            if (finalProgress > 75) {
                 progressFill.style.background = 'linear-gradient(90deg, #00ff00, #4287f5)';
-            } else if (progress > 50) {
+            } else if (finalProgress > 50) {
                 progressFill.style.background = 'linear-gradient(90deg, #ffff00, #00ff00)';
-            } else if (progress > 25) {
+            } else if (finalProgress > 25) {
                 progressFill.style.background = 'linear-gradient(90deg, #ffa500, #ffff00)';
             }
 
@@ -2015,8 +2021,8 @@
             if (heightIndicator) {
                 const indicatorHeight = heightIndicator.offsetHeight;
                 const playerIndicator = document.getElementById('playerIndicator');
-                const position = (progress / 100) * indicatorHeight;
-                playerIndicator.style.top = `${Math.min(heightIndicator.offsetHeight, Math.max(0, position))}px`;
+                const position = (finalProgress / 100) * indicatorHeight;
+                playerIndicator.style.top = `${position}px`;
             }
 
             lastProgressUpdate = currentTime;
