@@ -894,6 +894,29 @@
         // Update scale on window resize
         window.addEventListener('resize', updateMenuScale);
 
+            // // Clear Data Function
+        function clearData() {
+            // Clear local storage
+            localStorage.clear();
+            
+            // Delete all IndexedDB databases
+            indexedDB.databases().then(databases => {
+                databases.forEach(db => {
+                    indexedDB.deleteDatabase(db.name);
+                });
+            }).catch(error => {
+                console.error('Error deleting databases:', error);
+            });
+            
+            // Show confirmation popup
+            if (confirm("Do you want to leave the page? (Clicking No/Cancel will reload the page)")) {
+                // If the user clicks "Yes"
+                window.location.href = "https://github.com/NellowTCS/TeleporterDash/";
+            } else {
+                // If the user clicks "No"
+                location.reload();
+            }      
+        }
     </script>
 </body>
 
