@@ -1944,7 +1944,6 @@
         }
 
         // ===== Event listeners for player input =====
-        document.addEventListener('touchstart', jump);
         document.addEventListener('keydown', handleSpaceJump);
         document.addEventListener('mousedown', handleMouseJump);
         restartBtn.addEventListener('click', restartGame);
@@ -1954,6 +1953,12 @@
          */
         function jump(e) {
             const currentTime = Date.now();
+        
+            // Prevent double jump by ensuring minimum buffer time
+            if (currentTime - lastJumpPressTime < jumpBufferTime) {
+                return;
+            }
+        
             // Check if jump is allowed (not game over and either on ground or can double jump)
             if (!isGameOver && (
                 (!isJumping && !isOnPlatform) ||
@@ -1967,6 +1972,7 @@
                 jumpCount++;  // Track jumps
                 playerVelocity = jumpForce;
                 lastJumpPressTime = currentTime;
+                
                 // Play jump sound if available and not muted
                 if (!AudioManager.isMuted && AudioManager.jumpSound?.readyState === 4) {
                     AudioManager.jumpSound.currentTime = 0;
@@ -1974,6 +1980,16 @@
                 }
             }
         }
+        
+        // Apply touch event listener with a flag to prevent double triggers
+        document.addEventListener('touchstart', (e) => {
+            if (!e.targetTouches[0].target.__touchHandled) {
+                e.targetTouches[0].target.__touchHandled = true;
+                jump(e);
+                setTimeout(() => { e.targetTouches[0].target.__touchHandled = false; }, jumpBufferTime);
+            }
+        }, { passive: false });
+
         /**
          * Handles spacebar input for jumping
          * Prevents page scrolling on space press
