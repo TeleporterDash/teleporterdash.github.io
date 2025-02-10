@@ -486,7 +486,9 @@
                 }
        
                 // Initialize all audio elements with MP3 or OGG based on browser
-                const musicPath = this.isSafari() ? levelMusicPath.replace('.ogg', '.mp3') : levelMusicPath;
+                const musicPath = this.isSafari() && !levelMusicPath.endsWith('.mp3') 
+                    ? levelMusicPath.replace(/\.\w+$/, '.mp3') 
+                    : levelMusicPath;
                 const practiceMusicPath = this.isSafari() ? '../Sound/Basic Soundeffects/practicetd.ogg'.replace('.ogg', '.mp3') : '../Sound/Basic Soundeffects/practicetd.ogg';
                 const jumpSoundPath = this.isSafari() ? '../Sound/Basic Soundeffects/jumptd.ogg'.replace('.ogg', '.mp3') : '../Sound/Basic Soundeffects/jumptd.ogg';
                 const deathSoundPath = this.isSafari() ? '../Sound/Basic Soundeffects/deathtd.ogg'.replace('.ogg', '.mp3') : '../Sound/Basic Soundeffects/deathtd.ogg';
@@ -943,24 +945,23 @@
                     levelMusic = '../Sound/Basic Soundeffects/practicetd.ogg';
                 } else if (data.musicValue && data.musicValue.startsWith('../Sound/Level Soundtracks/')) {
                     levelMusic = `${data.musicValue}`;
-                    console.log("Level Soundtrack: ", levelMusic);
                 } else if (data.musicValue) {
                     levelMusic = `../Sound/Level Soundtracks/${data.musicValue}`;
-                    console.log("Level Soundtrack: ", levelMusic);
                 } else if (data.musicData) {
                     levelMusic = `${data.musicData}`;
-                    console.log("Level Soundtrack: ", levelMusic);
                 } else if (data.music && data.music.startsWith('../Sound/Level Soundtracks/')) {
                     levelMusic = `${data.music}`;
-                    console.log("Level Soundtrack: ", levelMusic);
                 } else if (data.music) {
                     levelMusic = `../Sound/Level Soundtracks/${data.music}`;
-                    console.log("Level Soundtrack: ", levelMusic);
                 } else {
                     levelMusic = '../Sound/Level Soundtracks/level1.ogg';
-                    console.log("Using default soundtrack");
                 }
 
+                // Ensure Safari gets .mp3 instead of .ogg
+                if (AudioManager.isSafari() && !levelMusic.endsWith('.mp3')) {
+                    levelMusic = levelMusic.replace(/\.\w+$/, '.mp3');
+                }
+                
                 levelId = data.id;
                 document.title = levelTitle;
 
