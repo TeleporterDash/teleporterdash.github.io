@@ -425,7 +425,7 @@
 
         // ===== Audio Manager =====
         const AudioManager = {
-            // "Initialize" Variables
+                // // "Initialize" Variables
             backgroundMusic: null,
             practiceMusic: null,
             jumpSound: null,
@@ -435,13 +435,13 @@
             lastMusicTime: 0,
             isInitialized: false,
        
-            // Function to detect if the browser is Safari
+                // // Function to detect if the browser is Safari
             isSafari() {
                 const userAgent = navigator.userAgent.toLowerCase();
                 return userAgent.includes('safari') && !userAgent.includes('chrome');
             },
        
-            // Play Audio
+                // // Play Audio
             async play(audio, startTime = 0) {
                 if (!audio) return;
                 try {
@@ -455,7 +455,7 @@
                 }
             },
        
-            // Pause Audio
+            // // Pause Audio
             async pause(audio) {
                 if (!audio) return;
                 try {
@@ -465,7 +465,7 @@
                 }
             },
        
-            // Switch Audio
+            // // Switch Audio
             async switchTracks(trackToPlay, trackToPause) {
                 if (!trackToPlay || !trackToPause) return;
                 const currentTime = trackToPause.currentTime;
@@ -475,7 +475,7 @@
                 }
             },
        
-            // Initialize Audio
+            // // Initialize Audio
             async initialize(levelMusicPath) {
                 if (this.isInitialized) {
                     // If already initialized, just update the background music source
@@ -502,7 +502,7 @@
                 this.isInitialized = true;
             },
        
-            // Setup/Update Audio
+            // // Setup/Update Audio
             async setup(levelMusicPath) {
                 // Initialize or update audio elements
                 await this.initialize(levelMusicPath);
@@ -550,7 +550,7 @@
                 }
             },
        
-            // Event Listener
+            // // Event Listener
             async restart() {
                 if (this.backgroundMusic) {
                     this.backgroundMusic.currentTime = 0;
@@ -571,7 +571,7 @@
                 });
             },
        
-            // Fade Out Audio at Level Completion
+            // // Fade Out Audio at Level Completion
             async fadeOut(audio, duration = 1000) {
                 if (!audio || audio.paused) return;
        
@@ -589,7 +589,7 @@
                 audio.volume = startVolume;
             },
        
-            // Mute
+            // // Mute
             toggleMute() {
                 this.isMuted = !this.isMuted;
                 SettingsManager.current.isMuted = this.isMuted;
