@@ -1934,61 +1934,68 @@
             updateGame();
         }
 
-        // ===== Event listeners for player input =====
-        document.addEventListener('touchstart', jump);
-        document.addEventListener('keydown', handleSpaceJump);
-        document.addEventListener('mousedown', handleMouseJump);
-        restartBtn.addEventListener('click', restartGame);
-
-        /**
-         * Handles player jumping mechanics
-         * Includes double jump and jump buffering
-         */
-        function jump(e) {
-            const currentTime = Date.now();
-
-            // Check if jump is allowed (not game over and either on ground or can double jump)
-            if (!isGameOver && (
-                (!isJumping && !isOnPlatform) ||
-                (doubleJumpAvailable && currentTime - lastJumpPressTime > jumpBufferTime)
-            )) {
-                if (isJumping) {
-                    doubleJumpAvailable = false;
+            // ===== Event listeners for player input =====
+            document.addEventListener('keydown', handleSpaceJump);
+            document.addEventListener('click', handleMouseJump);
+            document.addEventListener('touchstart', handleTouchJump, { passive: false });
+            restartBtn.addEventListener('click', restartGame);
+            
+            /**
+             * Handles player jumping mechanics
+             * Includes double jump and jump buffering
+             */
+            function jump() {
+                const currentTime = Date.now();
+            
+                // Prevent double jumps by increasing the buffer time
+                if (currentTime - lastJumpPressTime < 200) {
+                    return; // Ignore duplicate jumps within 200ms
                 }
-                isJumping = true;
-                isOnPlatform = false;
-                jumpCount++;  // Track jumps
-                playerVelocity = jumpForce;
-
-                lastJumpPressTime = currentTime;
-
-                // Play jump sound if available and not muted
-                if (!AudioManager.isMuted && AudioManager.jumpSound?.readyState === 4) {
-                    AudioManager.jumpSound.currentTime = 0;
-                    AudioManager.jumpSound.play().catch(error => console.log("Jump sound failed:", error));
+            
+                if (!isGameOver && (
+                    (!isJumping && !isOnPlatform) ||
+                    (doubleJumpAvailable)
+                )) {
+                    if (isJumping) {
+                        doubleJumpAvailable = false;
+                    }
+                    isJumping = true;
+                    isOnPlatform = false;
+                    jumpCount++;  // Track jumps
+                    playerVelocity = jumpForce;
+            
+                    lastJumpPressTime = currentTime;
                 }
             }
-        }
-
-        /**
-         * Handles spacebar input for jumping
-         * Prevents page scrolling on space press
-         */
-        function handleSpaceJump(e) {
-            if (e.code === 'Space') {
-                e.preventDefault();
+            
+            /**
+             * Handles touch input for jumping
+             * Prevents duplicate jumps from mouse events
+             */
+            function handleTouchJump(e) {
+                e.preventDefault(); // Prevents touch triggering mouse events
                 jump();
             }
-        }
-
-        /**
-         * Handles mouse input for jumping
-         */
-        function handleMouseJump(e) {
-            if (e.button === 0) { // Left click only
-                jump();
+            
+            /**
+             * Handles mouse input for jumping
+             */
+            function handleMouseJump(e) {
+                if (e.button === 0) { // Left click only
+                    jump();
+                }
             }
-        }
+            
+            /**
+             * Handles spacebar input for jumping
+             * Prevents page scrolling on space press
+             */
+            function handleSpaceJump(e) {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    jump();
+                }
+            }
 
         /**
          * Updates the progress bar and level completion percentage
