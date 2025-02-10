@@ -941,25 +941,34 @@
                 if (data.musicValue === 'custom' && data.musicData) {
                     const blob = new Blob([data.musicData.data], { type: data.musicData.type });
                     levelMusic = URL.createObjectURL(blob);
+                    console.log('LevelMusic: ', levelMusic);
                 } else if (isPracticeMode) {
                     levelMusic = '../Sound/Basic Soundeffects/practicetd.ogg';
+                    console.log('LevelMusic: ', levelMusic);
                 } else if (data.musicValue && data.musicValue.startsWith('../Sound/Level Soundtracks/')) {
                     levelMusic = `${data.musicValue}`;
+                    console.log('LevelMusic: ', levelMusic);
                 } else if (data.musicValue) {
                     levelMusic = `../Sound/Level Soundtracks/${data.musicValue}`;
+                    console.log('LevelMusic: ', levelMusic);
                 } else if (data.musicData) {
                     levelMusic = `${data.musicData}`;
+                    console.log('LevelMusic: ', levelMusic);
                 } else if (data.music && data.music.startsWith('../Sound/Level Soundtracks/')) {
                     levelMusic = `${data.music}`;
+                    console.log('LevelMusic: ', levelMusic);
                 } else if (data.music) {
                     levelMusic = `../Sound/Level Soundtracks/${data.music}`;
+                    console.log('LevelMusic: ', levelMusic);
                 } else {
                     levelMusic = '../Sound/Level Soundtracks/level1.ogg';
+                    console.log('LevelMusic: ', levelMusic);
                 }
 
                 // Ensure Safari gets .mp3 instead of .ogg
                 if (AudioManager.isSafari() && !levelMusic.endsWith('.mp3')) {
                     levelMusic = levelMusic.replace(/\.\w+$/, '.mp3');
+                    console.log('LevelMusic: ', levelMusic);
                 }
                 
                 levelId = data.id;
