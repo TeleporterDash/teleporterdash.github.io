@@ -1613,9 +1613,21 @@
                         } else if (obstacle.type === 'teleporter') {
                             const rotation = parseInt(obstacle.element.getAttribute('data-rotation') || '0');
                            
-                            if (rotation === 90 || rotation === 270) {
+                            if (rotation === 90) {
                                 // Horizontal teleport - move obstacles forward/back
                                 const dx = 240; // Move obstacles forward
+                               
+                                // Update all obstacle positions
+                                obstacles.forEach(obs => {
+                                    const obsLeft = parseInt(obs.element.style.left || '0');
+                                    obs.element.style.left = (obsLeft + dx) + 'px';
+                                });
+                               
+                                // Keep player at fixed position
+                                player.style.left = '100px';
+                            } else if (rotation === 270) {
+                                // Horizontal teleport - move obstacles back
+                                const dx = -240; // Move obstacles back
                                
                                 // Update all obstacle positions
                                 obstacles.forEach(obs => {
