@@ -1615,7 +1615,7 @@
                            
                             if (rotation === 90) {
                                 // Horizontal teleport - move obstacles forward/back
-                                const dx = -240; // Move obstacles forward
+                                const dx = -120; // Move obstacles forward
                                
                                 // Update all obstacle positions
                                 obstacles.forEach(obs => {
@@ -1627,7 +1627,7 @@
                                 player.style.left = '100px';
                             } else if (rotation === 270) {
                                 // Horizontal teleport - move obstacles back
-                                const dx = 240; // Move obstacles back
+                                const dx = 120; // Move obstacles back
                                
                                 // Update all obstacle positions
                                 obstacles.forEach(obs => {
