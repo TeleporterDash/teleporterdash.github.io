@@ -657,24 +657,22 @@
             '4': '#00ff00'    // Finish
         };
 
-        function parseBlockProperties(block) {
+       function parseBlockProperties(block) {
             if (typeof block !== 'string') {
-                return { type: block, color: null, rotation: 0 };
+                return isNaN(block) || block === null ? { type: 0, color: null, rotation: 0 } : { type: block, color: null, rotation: 0 };
             }
-
             const props = block.split('/');
             const type = parseInt(props[0]);
+            if (isNaN(type)) return { type: 0, color: null, rotation: 0 };
             let color = null;
             let rotation = 0;
-
             props.slice(1).forEach(prop => {
                 if (prop.startsWith('-')) {
-                    color = TILE_COLORS[prop];
+                    color = TILE_COLORS[prop] || null;
                 } else if (prop.startsWith('@')) {
-                    rotation = parseInt(prop.substring(1));
+                    rotation = parseInt(prop.substring(1)) || 0;
                 }
             });
-
             return { type, color, rotation };
         }
 
