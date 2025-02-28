@@ -590,38 +590,26 @@
         function updateGridSize() {
             const width = parseInt(gridWidthInput.value) || 100;
             const height = parseInt(gridHeightInput.value) || 5;
-            
-            // Update CSS variables for grid dimensions
-            document.documentElement.style.setProperty('--grid-width', width);
-            document.documentElement.style.setProperty('--grid-height', height);
-            
-            // Calculate and set container height based on row height
-            const rowHeight = 55; // matches the CSS grid-template-rows value
-            const containerHeight = (height * rowHeight) + 20; // +2 for borders
-            gridContainer.style.height = containerHeight + 'px';
-            
-            // Create new matrix preserving existing data
+            if (height < levelMatrix.length && !confirm("Reducing the height will remove some rows. Continue?")) {
+                return;
+            }
+            const oldColorRow = [...(levelMatrix[0] || Array(width).fill(0))];
             const newMatrix = Array(height).fill().map((_, row) => {
                 if (row < levelMatrix.length) {
-                    // Copy existing row, extending with zeros if new width is larger
                     const existingRow = levelMatrix[row] || [];
-                    return Array(width).fill(0).map((_, col) => 
+                    return Array(width).fill(0).map((_, col) =>
                         col < existingRow.length ? existingRow[col] : 0
                     );
                 } else {
-                    // New rows are initialized with zeros
                     return Array(width).fill(0);
                 }
             });
-            
-            // Ensure first row is all platforms
-            newMatrix[0] = Array(width).fill(1);
-            
-            // Update global variables and matrix
+            newMatrix[0] = Array(width).fill(0).map((_, col) =>
+                col < oldColorRow.length ? oldColorRow[col] : 0
+            ); // Preserve color row
             GRID_WIDTH = width;
             GRID_HEIGHT = height;
             levelMatrix = newMatrix;
-            
             createGrid();
             updateGridVisuals();
         }
@@ -1475,6 +1463,10 @@
                 const reader = new FileReader();
                 
                 reader.onload = function(e) {
+                    if (musicPreview.src.startsWith('blob:')) {
+                        URL.revokeObjectURL(musicPreview.src);
+                    }
+                    
                     // Store the file data and metadata
                     customMusicFile = {
                         name: file.name,
