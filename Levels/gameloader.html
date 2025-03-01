@@ -1079,9 +1079,13 @@
         const progressFill = document.getElementById('progressFill');
         const totalColumns = levelMatrix[0].length;
 
-        // Jump buffer timing for more responsive controls
-        let jumpBufferTime = 150; // milliseconds - time window for buffering jump inputs
+        // Global jump buffer for keyboard/mouse inputs
+        let jumpBufferTime = 200; // milliseconds
+        
         let lastJumpPressTime = 0;
+        
+        // New variable for touch-specific sensitivity
+        let touchJumpDelay = 300; // milliseconds - adjust as needed
 
         // Progress update timing to optimize performance
         let lastProgressUpdate = 0;
@@ -1965,13 +1969,10 @@
          */
         function jump(e) {
             const currentTime = Date.now();
-        
-            // Prevent double jump by ensuring minimum buffer time
+            // Prevent double jump based on global jump buffer
             if (currentTime - lastJumpPressTime < jumpBufferTime) {
                 return;
             }
-        
-            // Check if jump is allowed (not game over and either on ground or can double jump)
             if (!isGameOver && (
                 (!isJumping && !isOnPlatform) ||
                 (doubleJumpAvailable && currentTime - lastJumpPressTime > jumpBufferTime)
@@ -1981,11 +1982,9 @@
                 }
                 isJumping = true;
                 isOnPlatform = false;
-                jumpCount++;  // Track jumps
+                jumpCount++;
                 playerVelocity = jumpForce;
                 lastJumpPressTime = currentTime;
-                
-                // Play jump sound if available and not muted
                 if (!AudioManager.isMuted && AudioManager.jumpSound?.readyState === 4) {
                     AudioManager.jumpSound.currentTime = 0;
                     AudioManager.jumpSound.play().catch(error => console.log("Jump sound failed:", error));
@@ -1993,12 +1992,12 @@
             }
         }
         
-        // Apply touch event listener with a flag to prevent double triggers
+        // Touch event listener using touchJumpDelay for sensitivity control
         document.addEventListener('touchstart', (e) => {
             if (!e.targetTouches[0].target.__touchHandled) {
                 e.targetTouches[0].target.__touchHandled = true;
                 jump(e);
-                setTimeout(() => { e.targetTouches[0].target.__touchHandled = false; }, jumpBufferTime);
+                setTimeout(() => { e.targetTouches[0].target.__touchHandled = false; }, touchJumpDelay);
             }
         }, { passive: false });
 
