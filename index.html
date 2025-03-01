@@ -1,7 +1,5 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +7,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
 
-        /* Base Styles */
         :root {
             --primary-color: #0F9D58;
             --secondary-color: #4285F4;
@@ -20,6 +17,8 @@
             --shadow-glow: 0 0 20px var(--primary-color);
             --transition-speed: 0.3s;
             --menu-scale: 1;
+            --level-selector-scale: 1;
+            --content-scale: 1; /* New variable for content scaling */
         }
 
         body {
@@ -35,49 +34,43 @@
             touch-action: manipulation;
         }
 
-        /* Menu Containers */
         .menu,
         .options-menu,
         .level-selector {
             background-color: var(--bg-darker);
-            padding: clamp(20px, calc(15px * var(--menu-scale)), 30px);
-            border-radius: clamp(10px, calc(15px * var(--menu-scale)), 20px);
+            padding: calc(15px * var(--menu-scale));
+            border-radius: calc(12px * var(--menu-scale));
             box-shadow: var(--shadow-glow);
             text-align: center;
             opacity: 1;
-            transition: all 0.5s ease-in-out;
+            transition: transform var(--transition-speed) ease, opacity 0.5s ease-in-out;
             visibility: visible;
-            transform: scale(var(--menu-scale));
+            transform-origin: center;
         }
 
         .menu,
         .options-menu {
-            width: clamp(400px, calc(500px * var(--menu-scale)), 800px);
+            width: calc(450px * var(--menu-scale));
+            max-width: 75vw;
+            transform: scale(var(--menu-scale));
         }
 
         .level-selector {
-            width: clamp(500px, calc(95% * var(--menu-scale)), 1900px);
-            min-width: 1000px;
-            height: clamp(20vh, calc(30vh * var(--menu-scale)), 60vh);
-            min-height: 720px;
+            width: calc(1200px * var(--level-selector-scale)); /* Adjusted base width */
+            max-width: 100vw;
+            height: calc(1000px * var(--level-selector-scale)); /* Increased base height */
+            max-height: 100vh; /* Increased for mobile */
             display: flex;
             flex-direction: column;
             position: absolute;
             left: 50%;
             top: 50%;
-            zoom: var(--menu-scale);
-
-            
-            transform: translate(-50%, -50%) scale(var(--menu-scale));
-            background-color: var(--bg-darker);
-            padding: clamp(15px, calc(25px * var(--menu-scale)), 60px);
-            border-radius: clamp(10px, calc(15px * var(--menu-scale)), 90px);
-            box-shadow: var(--shadow-glow);
+            transform: translate(-50%, -50%) scale(var(--level-selector-scale));
             overflow: auto;
             -webkit-overflow-scrolling: touch;
+            padding: calc(20px * var(--level-selector-scale)); /* Increased padding */
         }
 
-        /* Container for level selectors */
         .built-in-levels,
         .online-levels {
             position: fixed;
@@ -91,44 +84,45 @@
             z-index: 1000;
         }
 
-        /* Level display container */
         .level-display {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             flex: 1;
-            margin: 20px 0;
+            margin: calc(30px * var(--level-selector-scale)) 0;
         }
 
-        /* Headings */
         h1 {
-            font-size: clamp(2rem, calc(2.5rem * var(--menu-scale)), 4rem);
-            margin: clamp(15px, calc(20px * var(--menu-scale)), 40px) 0;
+            font-size: clamp(1.6rem, calc(1.8rem * var(--menu-scale)), 2.5rem);
+            margin: calc(12px * var(--menu-scale)) 0;
             color: var(--primary-color);
             text-shadow: var(--shadow-glow);
         }
 
+        .level-selector h1 {
+            font-size: calc(2.5rem * var(--level-selector-scale) * var(--content-scale));
+        }
+
         h2 {
-            font-size: clamp(1.2rem, calc(1.5rem * var(--menu-scale)), 2.5rem);
-            margin: clamp(8px, calc(12px * var(--menu-scale)), 24px) 0;
+            font-size: clamp(0.9rem, calc(1rem * var(--menu-scale)), 1.8rem);
+            margin: calc(8px * var(--menu-scale)) 0;
         }
 
         h3 {
-            font-size: clamp(1.5rem, calc(1.8rem * var(--menu-scale)), 2.8rem);
-            margin: clamp(12px, calc(16px * var(--menu-scale)), 32px) 0;
+            font-size: clamp(1rem, calc(1.3rem * var(--menu-scale)), 2rem);
+            margin: calc(10px * var(--menu-scale)) 0;
             color: var(--primary-color);
         }
 
-        /* Buttons */
         button {
             width: 100%;
-            margin: clamp(10px, calc(15px * var(--menu-scale)), 30px) auto;
-            padding: clamp(15px, calc(20px * var(--menu-scale)), 40px);
-            font-size: clamp(1.2rem, calc(1.5rem * var(--menu-scale)), 2.5rem);
+            margin: calc(10px * var(--menu-scale)) auto;
+            padding: calc(12px * var(--menu-scale));
+            font-size: clamp(0.9rem, calc(1rem * var(--menu-scale)), 1.8rem);
             background: var(--gradient);
-            border: clamp(2px, calc(3px * var(--menu-scale)), 6px) solid var(--primary-color);
-            border-radius: clamp(10px, calc(15px * var(--menu-scale)), 30px);
+            border: calc(2px * var(--menu-scale)) solid var(--primary-color);
+            border-radius: calc(10px * var(--menu-scale));
             color: var(--bg-darker);
             font-weight: bold;
             cursor: pointer;
@@ -146,23 +140,22 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
         }
 
-        /* Level Navigation */
         .level-navigation {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            width: 100%;
-            max-width: 400px;
-            margin: 20px auto;
+            gap: calc(13px * var(--level-selector-scale) * var(--content-scale));
+            width: 90%;
+            max-width: calc(90vw * var(--level-selector-scale));
+            margin: calc(25px * var(--level-selector-scale)) auto;
         }
 
         .level-navigation button {
             width: 100%;
-            padding: 15px;
-            font-size: 1.2rem;
+            padding: calc(25px * var(--level-selector-scale) * var(--content-scale));
+            font-size: calc(2rem * var(--level-selector-scale) * var(--content-scale));
             background: var(--gradient);
             border: none;
-            border-radius: 10px;
+            border-radius: calc(15px * var(--level-selector-scale) * var(--content-scale));
             color: var(--bg-darker);
             font-weight: bold;
             cursor: pointer;
@@ -188,26 +181,25 @@
 
         .nav-button.prev::before {
             content: "←";
-            margin-right: 10px;
+            margin-right: calc(10px * var(--level-selector-scale) * var(--content-scale));
         }
 
         .nav-button.next::after {
             content: "→";
-            margin-left: 10px;
+            margin-left: calc(10px * var(--level-selector-scale) * var(--content-scale));
         }
 
-        /* Level Info */
         .level-info {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
-            margin-top: 20px;
+            gap: calc(10px * var(--level-selector-scale) * var(--content-scale));
+            margin-top: calc(20px * var(--level-selector-scale));
             color: white;
         }
 
         .level-title {
-            font-size: 1.5rem;
+            font-size: calc(2rem * var(--level-selector-scale) * var(--content-scale));
             margin: 0;
             color: var(--primary-color);
         }
@@ -216,27 +208,28 @@
             display: flex;
             justify-content: space-around;
             width: 100%;
-            font-size: 0.9rem;
+            font-size: calc(1.2rem * var(--level-selector-scale) * var(--content-scale));
             color: #888;
         }
 
         .level-preview {
-            width: 200px;
-            height: 150px;
+            width: calc(40vw * var(--level-selector-scale) * var(--content-scale));
+            height: calc(30vw * var(--level-selector-scale) * var(--content-scale));
+            max-width: calc(500px * var(--content-scale));
+            max-height: calc(375px * var(--content-scale));
             background-color: var(--bg-darkest);
-            border-radius: 10px;
+            border-radius: calc(15px * var(--level-selector-scale) * var(--content-scale));
             overflow: hidden;
             margin: 0 auto;
             box-shadow: var(--shadow-glow);
             image-rendering: pixelated;
         }
 
-        /* Completion Bar */
         .completion {
-            height: 8px;
+            height: calc(6px * var(--menu-scale));
             background: #333;
-            border-radius: 4px;
-            margin: 20px auto;
+            border-radius: calc(3px * var(--menu-scale));
+            margin: calc(15px * var(--menu-scale)) auto;
             width: 80%;
             overflow: hidden;
         }
@@ -244,12 +237,11 @@
         .completion-fill {
             height: 100%;
             background: var(--gradient);
-            border-radius: 4px;
+            border-radius: calc(3px * var(--menu-scale));
             width: 0%;
             transition: width var(--transition-speed);
         }
 
-        /* Transitions */
         .fade-out {
             opacity: 0;
             visibility: hidden;
@@ -260,31 +252,29 @@
             visibility: visible;
         }
 
-        /* Back Button */
         .back-button {
             align-self: flex-start;
             margin-top: auto;
-            padding: 15px 30px;
-            font-size: 1.2em;
+            padding: calc(25px * var(--level-selector-scale) * var(--content-scale)) calc(40px * var(--level-selector-scale) * var(--content-scale));
+            font-size: calc(2rem * var(--level-selector-scale) * var(--content-scale));
         }
 
-        /* Error Messages */
         .error-message {
             background-color: rgba(255, 0, 0, 0.1);
-            border: 1px solid #ff0000;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
+            border: calc(1px * var(--menu-scale)) solid #ff0000;
+            padding: calc(8px * var(--menu-scale));
+            margin: calc(8px * var(--menu-scale)) 0;
+            border-radius: calc(4px * var(--menu-scale));
             text-align: center;
         }
 
         .error-message button {
-            margin-top: 10px;
-            padding: 5px 15px;
+            margin-top: calc(8px * var(--menu-scale));
+            padding: calc(4px * var(--menu-scale)) calc(12px * var(--menu-scale));
             background-color: #ff0000;
             color: white;
             border: none;
-            border-radius: 3px;
+            border-radius: calc(2px * var(--menu-scale));
             cursor: pointer;
         }
 
@@ -295,12 +285,10 @@
 </head>
 
 <body>
-    <!-- Background music -->
     <audio id="menu-music" loop preload="auto">
         <source src="Sound/Basic Soundeffects/menutd.ogg" type="audio/ogg">
     </audio>
 
-    <!-- Main Menu -->
     <div class="menu">
         <h1>Teleporter Dash</h1>
         <button onclick="handleMenuTransition('menu', 'built-in-levels')">Levels</button>
@@ -311,21 +299,18 @@
         <button onclick="showCredits();">Credits</button>
     </div>
 
-    <!-- Built-in Levels -->
     <div class="built-in-levels" style="display: none;">
         <div class="level-selector">
             <!-- Will be populated by loadBuiltInLevelRegistry() -->
         </div>
     </div>
 
-    <!-- Online Levels -->
     <div class="online-levels" style="display: none;">
         <div class="level-selector">
             <!-- Will be populated by loadOnlineLevelRegistry() -->
         </div>
     </div>
 
-    <!-- Options Menu -->
     <div class="options-menu" style="display: none;">
         <h1>Settings</h1>
         <div style="border-top: 1px solid #ccc; width: 100%; margin: 0 auto;"></div>
@@ -340,48 +325,32 @@
     </div>
 
     <script>
-        // ===== Menu Navigation System =====
-        /**
-         * Handles the transition animation between two menus
-         * @param {Element} fromMenu - The menu to transition from
-         * @param {Element} toMenu - The menu to transition to
-         */
+        // Menu Navigation System
         async function transitionMenu(fromMenu, toMenu) {
             return new Promise((resolve) => {
                 if (fromMenu) {
                     fromMenu.classList.add('fade-out');
-                    setTimeout(() => {
+                    fromMenu.addEventListener('transitionend', function handler() {
+                        fromMenu.removeEventListener('transitionend', handler);
                         fromMenu.style.display = "none";
                         if (toMenu) {
                             toMenu.style.display = "block";
-                            setTimeout(() => {
-                                toMenu.classList.remove('fade-out');
-                                resolve();
-                            }, 50);
-                        } else {
-                            resolve();
+                            toMenu.classList.remove('fade-out');
                         }
-                    }, 500);
+                        resolve();
+                    }, { once: true });
                 } else if (toMenu) {
                     toMenu.style.display = "block";
-                    setTimeout(() => {
-                        toMenu.classList.remove('fade-out');
-                        resolve();
-                    }, 50);
+                    toMenu.classList.remove('fade-out');
+                    resolve();
                 }
             });
         }
 
-        /**
-         * Simplified menu transition handler using menu IDs
-         * @param {string} from - ID of the menu to transition from
-         * @param {string} to - ID of the menu to transition to
-         */
         async function handleMenuTransition(from, to) {
             const fromMenu = document.querySelector('.' + from);
             const toMenu = document.querySelector('.' + to);
 
-            // Special handling for specific menus
             if (to === 'built-in-levels') {
                 await loadBuiltInLevelRegistry();
             } else if (to === 'online-levels') {
@@ -391,32 +360,26 @@
             await transitionMenu(fromMenu, toMenu);
         }
 
-        // ===== Audio Setup =====
+        // Audio Setup
         const menuMusic = document.getElementById('menu-music');
         menuMusic.loop = true;
         menuMusic.volume = 0.9;
         menuMusic.preload = 'auto';
 
-        // Start playing music on first click
         window.addEventListener('click', () => menuMusic.play(), { once: true });
 
-
-        // Track loading states
         let levelsLoaded = false;
         let cssLoaded = false;
 
-        // Check if fonts are loaded
         document.fonts.ready.then(() => {
             cssLoaded = true;
         });
 
-        // ===== Navigation Functions =====
-        // "Play"
+        // Navigation Functions
         function startGame() {
             console.log(currentLevelType);
             if (currentLevelType === 'built-in' && window.builtInLevels) {
                 const level = window.builtInLevels[currentLevelIndex];
-
                 window.location.href = `Levels/gameloader.html?level=${level.number}`;
             } else if (currentLevelType === 'online' && window.downloadedLevels) {
                 const level = window.downloadedLevels[currentLevelIndex];
@@ -428,41 +391,36 @@
             );
         }
 
-        // "Level Editor"
         function openLevelEditor() {
             window.location.href = "Level Editor/leveleditor.html";
         }
 
-        // "Credits"
         function showCredits() {
             alert("Credits to RobTopGames for the original game and music! \nCredits to ForeverBound, DJVI, and Step for the amazing original Geometry Dash music!");
         }
 
-        // "Level Store"
         function levelStore() {
             window.location.href = 'Levels/levelstore.html';
         }
 
-        // ===== Settings Functions =====
+        // Settings Functions
         function updateVolumeLabel() {
             const volume = document.getElementById("volume-slider").value;
             document.getElementById("volume-label").innerText = volume;
             menuMusic.volume = volume / 100;
         }
 
-
-        // ===== Level System =====
+        // Level System
         let currentLevelIndex = 0;
         let maxLevelIndex = 0;
         let loadingStarted = false;
-        let currentLevelType = 'built-in'; // Track whether we're in built-in or online levels
+        let currentLevelType = 'built-in';
 
         let db;
         const DB_NAME = 'TeleporterDashDB';
         const DB_VERSION = 2;
         const STORE_NAME = 'downloadedLevels';
 
-        // // Initialize IndexedDB
         function initDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -484,18 +442,14 @@
                         db.createObjectStore(STORE_NAME, { keyPath: 'filename' });
                         console.log('Object store created');
                     }
-                    
                     if (!db.objectStoreNames.contains('scores')) {
                         db.createObjectStore('scores');
                         console.log("Scores object store created");
                     }
-                    
                 };
             });
         }
 
-        // ===== Levels =====
-        // // Get levels from IndexedDB
         async function getDownloadedLevels() {
             if (!db) {
                 try {
@@ -537,7 +491,6 @@
             return BUILT_IN_LEVELS;
         }
 
-        // // Load Levels from Registries
         async function loadBuiltInLevelRegistry() {
             loadingStarted = true;
             currentLevelType = 'built-in';
@@ -598,7 +551,6 @@
             }
         }
 
-        // // Level Navigation Direction Handler
         async function handleLevelNavigation(direction) {
             const newIndex = currentLevelIndex + direction;
 
@@ -608,23 +560,21 @@
             }
         }
 
-        // ===== Level Preview System =====
-
         const TILE_COLORS = {
-            '-1': '#ff6b6b',  // Red
-            '-2': '#4ecdc4',  // Cyan
-            '-3': '#45b7d1',  // Blue
-            '-4': '#96ceb4',  // Green
-            '-5': '#ff9f1c',  // Orange
-            '-6': '#ffbe0b',  // Yellow
-            '-7': '#ff006e',  // Pink
-            '-8': '#8338ec',  // Purple
-            '-9': '#3a86ff',  // Light Blue
-            '0': '#000000',   // Empty
-            '1': '#45b7d1',   // Platform
-            '2': '#ff6b6b',   // Spike
-            '3': '#9932CC',   // Teleporter
-            '4': '#00ff00'    // Finish
+            '-1': '#ff6b6b',
+            '-2': '#4ecdc4',
+            '-3': '#45b7d1',
+            '-4': '#96ceb4',
+            '-5': '#ff9f1c',
+            '-6': '#ffbe0b',
+            '-7': '#ff006e',
+            '-8': '#8338ec',
+            '-9': '#3a86ff',
+            '0': '#000000',
+            '1': '#45b7d1',
+            '2': '#ff6b6b',
+            '3': '#9932CC',
+            '4': '#00ff00'
         };
 
         function parseBlockProperties(block) {
@@ -654,9 +604,9 @@
             ctx.rotate((rotation * Math.PI) / 180);
             
             ctx.beginPath();
-            ctx.moveTo(-size/2, size/2);  // Bottom left
-            ctx.lineTo(0, -size/2);       // Top middle
-            ctx.lineTo(size/2, size/2);   // Bottom right
+            ctx.moveTo(-size/2, size/2);
+            ctx.lineTo(0, -size/2);
+            ctx.lineTo(size/2, size/2);
             ctx.closePath();
             
             ctx.fillStyle = color;
@@ -682,30 +632,27 @@
         }
 
         function generateLevelPreview(matrix) {
+            const scale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--level-selector-scale')) || 1;
+            const contentScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--content-scale')) || 1;
             const canvas = document.createElement('canvas');
-            canvas.width = 200;
-            canvas.height = 150;
+            canvas.width = Math.min(40 * scale * contentScale * window.innerWidth / 100, 500 * contentScale);
+            canvas.height = Math.min(30 * scale * contentScale * window.innerWidth / 100, 375 * contentScale);
             const ctx = canvas.getContext('2d');
 
-            // Get preview section dimensions
             const previewRows = Math.min(20, matrix.length);
             const previewCols = Math.min(17, matrix[0].length);
 
-            // Calculate tile size
             const tileSize = Math.min(
                 canvas.width / previewCols,
                 canvas.height / previewRows
             );
 
-            // Center the preview
             const offsetX = (canvas.width - (previewCols * tileSize)) / 2;
             const offsetY = (canvas.height - (previewRows * tileSize)) / 2;
 
-            // Draw background
             ctx.fillStyle = '#1a1a2e';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw level tiles
             for (let y = 0; y < previewRows; y++) {
                 for (let x = 0; x < previewCols; x++) {
                     const block = matrix[y][x];
@@ -713,20 +660,20 @@
                     const tileX = offsetX + (x * tileSize);
                     const tileY = offsetY + (y * tileSize);
 
-                    if (type === 0) continue;  // Skip empty tiles
+                    if (type === 0) continue;
 
                     switch(type) {
-                        case 1:  // Platform
+                        case 1:
                             ctx.fillStyle = color || TILE_COLORS['1'];
                             ctx.fillRect(tileX, tileY, tileSize, tileSize);
                             break;
-                        case 2:  // Spike
+                        case 2:
                             drawSpike(ctx, tileX, tileY, tileSize, color || TILE_COLORS['2'], rotation);
                             break;
-                        case 3:  // Teleporter
+                        case 3:
                             drawTeleporter(ctx, tileX, tileY, tileSize, color || TILE_COLORS['3']);
                             break;
-                        case 4:  // Finish line
+                        case 4:
                             drawFinishLine(ctx, tileX, tileY, tileSize);
                             break;
                     }
@@ -776,7 +723,6 @@
             }
 
             try {
-                // Get current level data
                 let levelData;
                 if (currentLevelType === 'built-in') {
                     const script = document.createElement('script');
@@ -797,7 +743,6 @@
 
                 if (!levelData) throw new Error('No level data found');
 
-                // Create preview
                 const preview = container.querySelector('.level-preview');
                 preview.innerHTML = '';
                 const previewCanvas = drawLevelPreview(levelData);
@@ -805,7 +750,6 @@
                     preview.appendChild(previewCanvas);
                 }
 
-                // Create level info
                 const info = container.querySelector('.level-info');
                 info.innerHTML = '';
 
@@ -827,7 +771,6 @@
                 info.appendChild(title);
                 info.appendChild(stats);
 
-                // Update navigation buttons
                 const prevButton = container.querySelector('.nav-button.prev');
                 const nextButton = container.querySelector('.nav-button.next');
 
@@ -840,8 +783,7 @@
             }
         }
 
-
-        //===== Error Handling =====
+        // Error Handling
         function showError(message, container) {
             const errorElement = document.createElement('div');
             errorElement.className = 'error-message';
@@ -861,63 +803,92 @@
             }
         }
 
-        // ===== Other =====
-
-        // // Initialize database when page loads
-        document.addEventListener('DOMContentLoaded', initDB);
-
-        // Add resize handler
+        // Resizing Function
         function updateMenuScale() {
             const width = window.innerWidth;
             const height = window.innerHeight;
-            
-            // Base dimensions that we want to scale from
-            const baseWidth = 1200;  // Original menu width
-            const baseHeight = 600;  // Approximate original menu height
-            
-            // Calculate scale based on both dimensions
-            const widthScale = (width * 0.95) / baseWidth;  // Use 95% of screen width
-            const heightScale = (height * 0.95) / baseHeight;  // Use 95% of screen height
-            
-            // Use the smaller scale to ensure menu fits both dimensions
-            let scale = Math.min(widthScale, heightScale);
-            
-            // Clamp the scale between 0.15 and 1.5 for better visibility
-            scale = Math.max(0.15, Math.min(scale, 1.5));
-            
-            document.documentElement.style.setProperty('--menu-scale', scale);
+            const zoomLevel = window.devicePixelRatio || 1;
+
+            // Menu scaling (unchanged)
+            const menuElement = document.querySelector('.menu');
+            if (menuElement) {
+                const baseMenuWidth = 450;
+                const baseMenuHeight = 300;
+                const menuWidthScale = (width / zoomLevel * 0.7) / baseMenuWidth;
+                const menuHeightScale = (height / zoomLevel * 0.7) / baseMenuHeight;
+                let menuScale = Math.min(menuWidthScale, menuHeightScale);
+                menuScale = Math.max(0.6, Math.min(menuScale, 1.2));
+                document.documentElement.style.setProperty('--menu-scale', menuScale);
+            }
+
+            // Level selector scaling
+            const levelSelectorElement = document.querySelector('.level-selector');
+            if (levelSelectorElement) {
+                const baseLevelWidth = 1200;
+                const baseLevelHeight = 1000; // Increased for taller mobile
+                const levelWidthScale = (width / zoomLevel * 1.0) / baseLevelWidth;
+                const levelHeightScale = (height / zoomLevel * 1.0) / baseLevelHeight;
+                let levelScale;
+                if (width < 768) { // Mobile
+                    const levelHeightScale = (height / zoomLevel * 1.0) / baseLevelHeight; // 100% height ratio
+                    levelScale = Math.min(levelWidthScale, levelHeightScale);
+                    levelScale = Math.max(1.8, Math.min(levelScale, 2.5)); // Large mobile size
+                    levelSelectorElement.style.maxHeight = '100vh'; // Full height on mobile
+                } else { // Desktop
+                    const levelHeightScale = (height / zoomLevel * 0.9) / baseLevelHeight; // Reduced to 40% height ratio
+                    levelScale = Math.min(levelWidthScale, levelHeightScale);
+                    levelScale = Math.max(1.0, Math.min(levelScale, 1.6)); // Desktop range
+                    levelSelectorElement.style.maxHeight = `${Math.min(baseLevelHeight * levelScale, height * 0.9)}px`; // Smaller desktop height
+                }
+
+                // Adjust for overflow
+                const scaledWidth = baseLevelWidth * levelScale;
+                const scaledHeight = baseLevelHeight * levelScale;
+                if (scaledWidth > width || scaledHeight > height) {
+                    const overflowScale = Math.min(width / scaledWidth, height / scaledHeight);
+                    levelScale *= overflowScale;
+                }
+
+                document.documentElement.style.setProperty('--level-selector-scale', levelScale);
+
+                // Adjust content scale: smaller on desktop, normal on mobile
+                const contentScale = (width >= 768) ? 0.6 : 1.0; // Reduce content size on desktop
+                document.documentElement.style.setProperty('--content-scale', contentScale);
+            }
         }
 
         // Initial scale setup
-        updateMenuScale();
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(updateMenuScale, 100);
+        });
 
-        // Update scale on window resize
-        window.addEventListener('resize', updateMenuScale);
+        // Update scale on resize with debounce
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(updateMenuScale, 100);
+        });
 
-            // // Clear Data Function
+        // Clear Data Function
         function clearData() {
-            // Clear local storage
-            localStorage.clear();
-            
-            // Delete all IndexedDB databases
-            indexedDB.databases().then(databases => {
-                databases.forEach(db => {
-                    indexedDB.deleteDatabase(db.name);
+            if (confirm("Are you sure you want to clear all data? This action cannot be undone.")) {
+                localStorage.clear();
+                indexedDB.databases().then(databases => {
+                    databases.forEach(db => {
+                        indexedDB.deleteDatabase(db.name);
+                    });
+                }).catch(error => {
+                    console.error('Error deleting databases:', error);
                 });
-            }).catch(error => {
-                console.error('Error deleting databases:', error);
-            });
-            
-            // Show confirmation popup
-            if (confirm("Do you want to leave the page? (Clicking No/Cancel will reload the page)")) {
-                // If the user clicks "Yes"
-                window.location.href = "https://github.com/NellowTCS/TeleporterDash/";
-            } else {
-                // If the user clicks "No"
-                location.reload();
-            }      
+                if (confirm("Do you want to leave the page? (Clicking No/Cancel will reload the page)")) {
+                    window.location.href = "https://github.com/NellowTCS/TeleporterDash/";
+                } else {
+                    location.reload();
+                }
+            }
         }
+
+        document.addEventListener('DOMContentLoaded', initDB);
     </script>
 </body>
-
 </html>
