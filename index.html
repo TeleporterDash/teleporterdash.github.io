@@ -326,18 +326,30 @@
 
     <script>
         // Menu Navigation System
-        async function handleMenuTransition(from, to) {
-            const fromMenu = document.querySelector('.' + from);
-            const toMenu = document.querySelector('.' + to);
-
-            // Special handling for specific menus
-            if (to === 'built-in-levels') {
-                await loadBuiltInLevelRegistry();
-            } else if (to === 'online-levels') {
-                await loadOnlineLevelRegistry();
-            }
-
-            await transitionMenu(fromMenu, toMenu);
+        async function transitionMenu(fromMenu, toMenu) {
+            return new Promise((resolve) => {
+                if (fromMenu) {
+                    fromMenu.classList.add('fade-out');
+                    setTimeout(() => {
+                        fromMenu.style.display = "none";
+                        if (toMenu) {
+                            toMenu.style.display = "block";
+                            setTimeout(() => {
+                                toMenu.classList.remove('fade-out');
+                                resolve();
+                            }, 50);
+                        } else {
+                            resolve();
+                        }
+                    }, 500);
+                } else if (toMenu) {
+                    toMenu.style.display = "block";
+                    setTimeout(() => {
+                        toMenu.classList.remove('fade-out');
+                        resolve();
+                    }, 50);
+                }
+            });
         }
         
         async function handleMenuTransition(from, to) {
