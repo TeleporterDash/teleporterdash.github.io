@@ -7,14 +7,14 @@
 
         body {
             margin: 0;
-            padding: 20px;
+            padding: 0px;
             min-height: 100vh;
             background: #1a1a1a;
             font-family: 'Orbitron', sans-serif;
             color: white;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            /* align-items: center; */
             touch-action: manipulation;
         }
 
@@ -23,18 +23,25 @@
             gap: 20px;
             max-width: 1400px;
             width: 100%;
+            margin-left: 0; /* Explicitly set to remove any default margin */
+            justify-content: flex-start; /* Ensure content starts from the left */
         }
 
         #leftPanel {
             display: flex;
             flex-direction: column;
             gap: 20px;
-            width: 90%;
+            width: 84%;
+            flex: 1;
+            margin-left: 0; /* Remove left margin */
+            padding-left: 0; /* Remove left padding */
         }
 
         #rightPanel {
-            flex: 1;
+            flex: 0 0 16; 
             min-width: 300px;
+            margin-left: 0; /* Remove left margin */
+            padding-left: 0; /* Remove left padding */
         }
 
         #gridContainer {
@@ -46,7 +53,7 @@
         }
 
         #grid {
-            width: 150%;
+            width: 100%;
             display: grid;
             grid-template-columns: repeat(var(--grid-width, 100), 50px);
             grid-template-rows: repeat(var(--grid-height, 5), 55px);
@@ -126,7 +133,7 @@
             gap: 15px;
             margin-left: auto;
             margin-right: -40px;
-         }
+        }
 
         .control-group {
             display: flex;
@@ -427,7 +434,7 @@
                         </div>
                         <div>
                             <label for="gridHeight">Height:</label>
-                            <input type="number" id="gridHeight" value="5" style="width: 70px;">
+                            <input type="number" id="gridHeight" value="12" style="width: 70px;">
                         </div>
                         <button id="updateGridSize" style="padding: 5px 10px; background: #4285F4; border: none; border-radius: 5px; color: white; cursor: pointer;">
                             Update Grid
@@ -533,7 +540,7 @@
         const updateGridSizeBtn = document.getElementById('updateGridSize');
         const gridContainer = document.getElementById('gridContainer'); // Get grid container
         let GRID_WIDTH = 100;
-        let GRID_HEIGHT = 5;
+        let GRID_HEIGHT = 12;
             // // // Initialize Level Matrix
         let levelMatrix = Array(GRID_HEIGHT).fill().map(() => Array(GRID_WIDTH).fill(0));
 
