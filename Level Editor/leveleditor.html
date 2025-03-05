@@ -1595,9 +1595,9 @@ window.levelData = {
             lastExportedMatrix = JSON.parse(JSON.stringify(levelMatrix));
             hasUnsavedChanges = false;
 
-            alert('You will be redirected to a Google Form to submit your level in a few seconds.');
+            alert('Your level will be downloaded for backup and then you will be redirected to a form to submit your level in a few seconds.');
             setTimeout(() => {
-            window.location.href = 'https://forms.gle/2hGA3QKpQmN2akA99';
+            window.location.href = 'https://script.google.com/macros/s/AKfycby1XUV7ovzK6NbLdGLVX36V9_FrkFXDyeZrCpGkNmKBc3TI6rqi0m_6_Jcg46XELyffug/exec';
             }, 3000);
 
         });
