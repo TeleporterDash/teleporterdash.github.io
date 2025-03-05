@@ -1595,7 +1595,7 @@ window.levelData = {
             lastExportedMatrix = JSON.parse(JSON.stringify(levelMatrix));
             hasUnsavedChanges = false;
 
-            alert('Your level will be downloaded for backup and then you will be redirected to a form to submit your level in a few seconds.');
+            alert('Your level will be downloaded for backup and then you will be redirected to a form to submit your level in a few seconds. Note: If you get the error \'Address unavailable:\', this is just an GitHub server issue and you can click Upload again. ');
             setTimeout(() => {
             window.location.href = 'https://script.google.com/macros/s/AKfycby1XUV7ovzK6NbLdGLVX36V9_FrkFXDyeZrCpGkNmKBc3TI6rqi0m_6_Jcg46XELyffug/exec';
             }, 3000);
