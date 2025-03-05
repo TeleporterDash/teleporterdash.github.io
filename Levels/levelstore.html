@@ -471,10 +471,9 @@
                 const downloadButton = card.querySelector('.download-button');
                 const deleteButton = card.querySelector('.delete-button');
                 
-                downloadButton.textContent = 'Downloaded';
-                downloadButton.classList.add('downloaded');
-                downloadButton.disabled = true;
-                downloadButton.onclick = null;
+                downloadButton.textContent = 'Play Level 🎮';
+                downloadButton.disabled = false;
+                downloadButton.onclick = () => startGame(filename);
                 
                 deleteButton.classList.remove('hidden');
             }
@@ -562,9 +561,9 @@
                 
                 // Create download button
                 const downloadBtn = document.createElement('button');
-                downloadBtn.className = 'download-button' + (level.isDownloaded ? ' downloaded' : '');
-                downloadBtn.textContent = level.isDownloaded ? 'Downloaded' : 'Download';
-                downloadBtn.onclick = level.isDownloaded ? null : () => downloadLevel(level.filename);
+                downloadBtn.className = 'download-button';
+                downloadBtn.textContent = level.isDownloaded ? 'Play Level 🎮' : 'Download';
+                downloadBtn.onclick = level.isDownloaded ? () => startGame(level.filename) : () => downloadLevel(level.filename);
                 
                 // Create delete button (only shown for downloaded levels)
                 const deleteBtn = document.createElement('button');
@@ -855,17 +854,14 @@
                     </div>`;
             }
         };
-    </script>
-</body>
-</html>
+        function startGame(levelFilename) {
+             window.location.href = `gameloader.html?online=true&levelFile=${encodeURIComponent(levelFilename)}`;
 
-                console.error('Failed to initialize:', error);
-                document.getElementById('levelGrid').innerHTML = `
-                    <div style="grid-column: 1/-1; text-align: center; color: red;">
-                        Error initializing level store. Please try again later.
-                    </div>`;
-            }
-        };
+             transitionMenu(
+                 document.querySelector(".menu"),
+              document.querySelector(".level-selector")
+             );
+        }
     </script>
 </body>
 </html>
