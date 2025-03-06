@@ -317,7 +317,7 @@
                 <div id="progressFill"></div>
             </div>
         </div>
-        <button id="muteButton"></button>
+        <button id="muteButton">🔇</button>
         <button id="pauseButton">⏸</button>
         <div id="timer" style="position: fixed; top: 10px; left: 230px; background: rgba(0, 0, 0, 0.3); color: #00ff00; padding: 10px; border-radius: 5px; font-family: 'Orbitron', sans-serif; font-size: 24px; z-index: 1000;">0:00</div>
         <div id="gameOver">
@@ -838,6 +838,10 @@
                     if (urlParams.has('level')) {
                         console.log('Loading built-in level');
                         const levelNumber = urlParams.get('level');
+                        if (!/^\d+$/.test(levelNumber)) {
+                            showLoadingError("Invalid level number");
+                            return;
+                        }
                         console.log('Loading level:', levelNumber);
 
                         // Dynamically load the level script file
@@ -2706,10 +2710,13 @@
         function showError(message, container) {
             const errorElement = document.createElement('div');
             errorElement.className = 'error-message';
-            errorElement.innerHTML = `
-                <p>${message}</p>
-                <button onclick="this.parentElement.remove()">OK</button>
-            `;
+            const p = document.createElement('p');
+            p.textContent = message;
+            const button = document.createElement('button');
+            button.textContent = 'OK';
+            button.onclick = () => errorElement.remove();
+            errorElement.appendChild(p);
+            errorElement.appendChild(button);
             container.appendChild(errorElement);
         }
 
@@ -2718,7 +2725,10 @@
                 isBuiltIn ? '.built-in-levels #current-level' : '.online-levels #current-level'
             );
             if (container) {
-                container.innerHTML = `<p>${message}</p>`;
+                const p = document.createElement('p');
+                p.textContent = message; // Use textContent instead of innerHTML
+                container.innerHTML = ''; // Clear existing content
+                container.appendChild(p);
             }
         }
 
