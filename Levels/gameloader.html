@@ -986,7 +986,7 @@
                 calculateTotalBlocks();
 
                 // Reset game state
-                gameSpeed = 5;
+                gameSpeed = 4;
                 currentColumn = 0;
                 playerVelocity = 0;
                 rotation = 0;
@@ -1067,7 +1067,7 @@
         let gravity = 0.6;                          //! Rate at which player falls
         let jumpForce = -15;                        //! Initial upward velocity when jumping
         let playerVelocity = 0;                     // Current vertical velocity of player
-        let gameSpeed = 5;                          //! Base movement speed of the level
+        let gameSpeed = 4;                          //! Base movement speed of the level
         let isGameOver = false;                     // Whether the game is in a "game over" state
         let rotation = 0;                           // Current rotation of the player sprite
         let obstacles = [];                         // Array of all active obstacles
@@ -1135,7 +1135,7 @@
                 controlMethod: 'both',
                 isMuted: false,
                 autoRestartEnabled: false,
-                gameSpeed: 5,
+                gameSpeed: 4,
                 visualEffects: true
             },
             save() {
@@ -1550,8 +1550,8 @@
             updateBackgroundColor();
 
             // Apply game speed to obstacle movement
-            const baseSpeed = 5;  // Default speed
-            const currentSpeed = isPracticeMode ? (baseSpeed * (SettingsManager.current.gameSpeed / 5)) : baseSpeed;
+            const baseSpeed = 4;  // Default speed
+            const currentSpeed = isPracticeMode ? (baseSpeed * (SettingsManager.current.gameSpeed / 4)) : baseSpeed;
 
             // Create new obstacles when needed
             // Only creates obstacles when there's enough space from the last one
@@ -1896,7 +1896,7 @@
             isGameOver = false;
             isLevelComplete = false;
             currentColumn = 0;
-            gameSpeed = 5;
+            gameSpeed = 4;
             playerVelocity = 0;
             rotation = 0;
             isOnPlatform = false;
@@ -2204,14 +2204,14 @@
                     if (gameSpeedSelect) {
                         gameSpeedSelect.disabled = !isPracticeMode;
                         if (!isPracticeMode) {
-                            gameSpeed = 5;
+                            gameSpeed = 4;
                             gameSpeedSelect.value = "1";
                             SettingsManager.current.gameSpeed = gameSpeed;
                             SettingsManager.save();
                         } else {
                             // Initialize game speed when practice mode is enabled
-                            gameSpeed = SettingsManager.current.gameSpeed || 5;
-                            gameSpeedSelect.value = (gameSpeed / 5).toString();
+                            gameSpeed = SettingsManager.current.gameSpeed || 4;
+                            gameSpeedSelect.value = (gameSpeed / 4).toString();
                         }
                     }
 
@@ -2247,7 +2247,7 @@
                 gameSpeedSelect.addEventListener('change', function () {
                     if (isPracticeMode) {
                         const speedMultiplier = parseFloat(this.value);
-                        gameSpeed = 5 * speedMultiplier;
+                        gameSpeed = 4 * speedMultiplier;
                         SettingsManager.current.gameSpeed = gameSpeed;
                         SettingsManager.save();
                     }
@@ -2632,7 +2632,7 @@
                     settingsMenu.style.display = 'none';
 
                     // Reset game state before starting
-                    gameSpeed = 5;
+                    gameSpeed = 4;
                     currentColumn = 0;
                     playerVelocity = 0;
                     rotation = 0;
