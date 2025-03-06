@@ -1,16 +1,14 @@
 // Score Manager for Teleporter Dash
 const ScoreManager = {
-    // Default scores structure
+    // Default scores structure using Map
     scores: {
-        levels: {}
+        levels: new Map()
     },
     db: null,
-    dbVersion: 2, // Increment version to force upgrade
-
+    dbVersion: 2, 
     // Initialize IndexedDB
     async initDB() {
         return new Promise((resolve, reject) => {
-            
             const request = indexedDB.open('TeleporterDashDB', this.dbVersion);
 
             request.onerror = (event) => {
@@ -44,7 +42,7 @@ const ScoreManager = {
             // If database isn't initialized, use memory storage
             if (!this.db) {
                 console.log('Using memory storage fallback');
-                this.scores = { levels: {} };
+                this.scores = { levels: new Map() };
                 return;
             }
 
@@ -60,11 +58,11 @@ const ScoreManager = {
                         keysRequest.onsuccess = () => {
                             const scores = request.result;
                             const keys = keysRequest.result;
-                            this.scores.levels = {};
+                            this.scores.levels = new Map();
                             
                             for (let i = 0; i < scores.length; i++) {
                                 const filename = keys[i];
-                                this.scores.levels[filename] = scores[i];
+                                this.scores.levels.set(filename, scores[i]);
                             }
                             console.log('Scores loaded successfully');
                             resolve();
@@ -73,17 +71,17 @@ const ScoreManager = {
                     
                     request.onerror = () => {
                         console.error('Error loading scores:', request.error);
-                        this.scores = { levels: {} };
+                        this.scores = { levels: new Map() };
                         resolve();
                     };
                 });
             } catch (error) {
                 console.error('Error accessing scores:', error);
-                this.scores = { levels: {} };
+                this.scores = { levels: new Map() };
             }
         } catch (error) {
             console.error('Error initializing scores:', error);
-            this.scores = { levels: {} };
+            this.scores = { levels: new Map() };
         }
     },
 
@@ -99,7 +97,7 @@ const ScoreManager = {
                 const transaction = this.db.transaction(['scores'], 'readwrite');
                 const store = transaction.objectStore('scores');
 
-                for (const [filename, data] of Object.entries(this.scores.levels)) {
+                for (const [filename, data] of this.scores.levels) {
                     await new Promise((resolve, reject) => {
                         const request = store.put(data, filename);
                         request.onsuccess = () => {
@@ -125,8 +123,8 @@ const ScoreManager = {
 
     // Add a new run for a level
     async addRun(filename, time, jumps, deaths = 0) {
-        if (!this.scores.levels[filename]) {
-            this.scores.levels[filename] = {
+        if (!this.scores.levels.has(filename)) {
+            this.scores.levels.set(filename, {
                 bestTime: Infinity,
                 bestJumps: Infinity,
                 lowestDeaths: Infinity,
@@ -134,10 +132,10 @@ const ScoreManager = {
                 totalDeaths: 0,
                 totalRuns: 0,
                 recentRuns: []
-            };
+            });
         }
 
-        const level = this.scores.levels[filename];
+        const level = this.scores.levels.get(filename);
         const run = {
             time,
             jumps,
@@ -165,7 +163,7 @@ const ScoreManager = {
 
     // Get level stats
     getLevelStats(filename) {
-        return this.scores.levels[filename] || {
+        return this.scores.levels.get(filename) || {
             bestTime: Infinity,
             bestJumps: Infinity,
             lowestDeaths: Infinity,
@@ -211,58 +209,78 @@ const ScoreManager = {
         if (!scoreboard) {
             scoreboard = this.createScoreboardUI();
         }
-
+        
         const stats = this.getLevelStats(filename);
-        const html = `
-            <h3 style="margin: 0 0 15px 0; color: #00ff00; text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);">${filename} Stats</h3>
-            <div style="background: rgba(0, 255, 0, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-                <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
-                    <span>Best Time:</span>
-                    <span style="color: #00ff00;">${this.formatTime(stats.bestTime)}</span>
-                </div>
-                <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
-                    <span>Best Jumps:</span>
-                    <span style="color: #00ff00;">${stats.bestJumps === Infinity ? '--' : stats.bestJumps}</span>
-                </div>
-                <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
-                    <span>Lowest Deaths:</span>
-                    <span style="color: #00ff00;">${stats.lowestDeaths === Infinity ? '--' : stats.lowestDeaths}</span>
-                </div>
-                <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
-                    <span>Perfect Runs:</span>
-                    <span style="color: #00ff00;">${stats.perfectRuns}</span>
-                </div>
+    
+        // Clear existing content
+        scoreboard.innerHTML = '';
+    
+        // Create and append the title (h3) using textContent to safely handle filename
+        const title = document.createElement('h3');
+        title.textContent = `${filename} Stats`; // Safe: textContent doesn't interpret HTML
+        title.style.cssText = 'margin: 0 0 15px 0; color: #00ff00; text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);';
+        scoreboard.appendChild(title);
+    
+        // Best stats section
+        const bestStatsDiv = document.createElement('div');
+        bestStatsDiv.style.cssText = 'background: rgba(0, 255, 0, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 15px;';
+        bestStatsDiv.innerHTML = `
+            <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
+                <span>Best Time:</span>
+                <span style="color: #00ff00;">${this.formatTime(stats.bestTime)}</span>
             </div>
-            <div style="background: rgba(0, 255, 0, 0.05); padding: 15px; border-radius: 10px;">
-                <h4 style="margin: 0 0 10px 0; color: #00ff00;">Total Stats</h4>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <span>Total Runs:</span>
-                    <span>${stats.totalRuns}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                    <span>Total Deaths:</span>
-                    <span>${stats.totalDeaths}</span>
-                </div>
+            <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
+                <span>Best Jumps:</span>
+                <span style="color: #00ff00;">${stats.bestJumps === Infinity ? '--' : stats.bestJumps}</span>
             </div>
-            ${stats.recentRuns.length > 0 ? `
-                <div style="margin-top: 15px;">
-                    <h4 style="margin: 0 0 10px 0; color: #00ff00;">Recent Runs</h4>
-                    ${stats.recentRuns.map(run => `
-                        <div style="background: rgba(0, 255, 0, 0.05); padding: 10px; border-radius: 8px; margin-bottom: 5px;">
-                            <div style="display: flex; justify-content: space-between;">
-                                <span>${this.formatTime(run.time)}</span>
-                                <span>${run.jumps} jumps</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 0.9em; color: #aaa;">
-                                <span>${run.deaths} deaths</span>
-                                <span>${new Date(run.date).toLocaleDateString()}</span>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            ` : ''}
+            <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
+                <span>Lowest Deaths:</span>
+                <span style="color: #00ff00;">${stats.lowestDeaths === Infinity ? '--' : stats.lowestDeaths}</span>
+            </div>
+            <div style="margin-bottom: 8px; display: flex; justify-content: space-between;">
+                <span>Perfect Runs:</span>
+                <span style="color: #00ff00;">${stats.perfectRuns}</span>
+            </div>
         `;
-        scoreboard.innerHTML = html;
+        scoreboard.appendChild(bestStatsDiv);
+    
+        // Total stats section
+        const totalStatsDiv = document.createElement('div');
+        totalStatsDiv.style.cssText = 'background: rgba(0, 255, 0, 0.05); padding: 15px; border-radius: 10px;';
+        totalStatsDiv.innerHTML = `
+            <h4 style="margin: 0 0 10px 0; color: #00ff00;">Total Stats</h4>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span>Total Runs:</span>
+                <span>${stats.totalRuns}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span>Total Deaths:</span>
+                <span>${stats.totalDeaths}</span>
+            </div>
+        `;
+        scoreboard.appendChild(totalStatsDiv);
+    
+        // Recent runs section (if applicable)
+        if (stats.recentRuns.length > 0) {
+            const recentRunsDiv = document.createElement('div');
+            recentRunsDiv.style.cssText = 'margin-top: 15px;';
+            recentRunsDiv.innerHTML = `
+                <h4 style="margin: 0 0 10px 0; color: #00ff00;">Recent Runs</h4>
+                ${stats.recentRuns.map(run => `
+                    <div style="background: rgba(0, 255, 0, 0.05); padding: 10px; border-radius: 8px; margin-bottom: 5px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>${this.formatTime(run.time)}</span>
+                            <span>${run.jumps} jumps</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.9em; color: #aaa;">
+                            <span>${run.deaths} deaths</span>
+                            <span>${new Date(run.date).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+            scoreboard.appendChild(recentRunsDiv);
+        }
     },
 
     // Create menu scoreboard UI
@@ -300,7 +318,7 @@ const ScoreManager = {
 
         let html = '<h2 style="margin: 0 0 20px 0; color: #00ff00; text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);">Level Statistics</h2>';
         
-        const levelIds = Object.keys(this.scores.levels).sort((a, b) => {
+        const levelIds = Array.from(this.scores.levels.keys()).sort((a, b) => {
             const numA = parseInt(a.replace('level', ''));
             const numB = parseInt(b.replace('level', ''));
             return numA - numB;
