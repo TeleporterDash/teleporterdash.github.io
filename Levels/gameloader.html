@@ -1068,8 +1068,6 @@
         let jumpForce = -15;                        //! Initial upward velocity when jumping
         let playerVelocity = 0;                     // Current vertical velocity of player
         let gameSpeed = 4;                          //! Base movement speed of the level
-        let lastFrameTime = performance.now();      // Time of the last frame for delta calculation
-        let deltaTime = 0;                          // Time elapsed since last frame in seconds
         let isGameOver = false;                     // Whether the game is in a "game over" state
         let rotation = 0;                           // Current rotation of the player sprite
         let obstacles = [];                         // Array of all active obstacles
@@ -1538,11 +1536,6 @@
          * Called every animation frame when game is running
          */
         function updateGame() {
-            // Calculate delta time
-            const currentTime = performance.now();
-            deltaTime = (currentTime - lastFrameTime) / 1000; // Convert to seconds
-            lastFrameTime = currentTime;
-
             // Don't update if game isn't in active state
             if (!isLevelStarted || isGameOver || isLevelComplete) {
                 return;
@@ -1559,36 +1552,25 @@
             // Apply game speed to obstacle movement
             const baseSpeed = 4;  // Default speed
             const currentSpeed = isPracticeMode ? (baseSpeed * (SettingsManager.current.gameSpeed / 4)) : baseSpeed;
-            const adjustedSpeed = currentSpeed * deltaTime * 60; // Normalize to 60 FPS
 
             // Create new obstacles when needed
-            // Only creates obstacles when the last obstacle has moved enough to make space
-            let shouldCreateNewObstacle = false;
-            if (currentColumn < levelMatrix[0].length) {
-                if (obstacles.length === 0) {
-                    shouldCreateNewObstacle = true; // Always create the first column
-                } else {
-                    const lastObstacle = obstacles[obstacles.length - 1];
-                    const lastObstacleLeft = parseInt(lastObstacle.element.style.left);
-                    // Check if the last obstacle has moved enough to create a new column
-                    const distanceMoved = gameContainer.offsetWidth - lastObstacleLeft;
-                    shouldCreateNewObstacle = distanceMoved >= CONSTANTS.COLUMN_WIDTH;
-                }
-            }
-
-            if (shouldCreateNewObstacle) {
+            // Only creates obstacles when there's enough space from the last one
+            if (currentColumn < levelMatrix[0].length &&
+                (obstacles.length === 0 ||
+                    gameContainer.offsetWidth - obstacles[obstacles.length - 1]?.element.offsetLeft > CONSTANTS.COLUMN_WIDTH)) {
                 for (let row = 0; row < levelMatrix.length; row++) {
                     createObstacleFromMatrix(levelMatrix[row][currentColumn], row);
                 }
                 currentColumn++;
+
                 // Only update progress when new obstacles are created
                 updateProgress();
             }
 
             // Player physics calculations
-            playerVelocity += gravity * deltaTime * 60; // Normalize gravity
+            playerVelocity += gravity;
             const currentBottom = parseInt(window.getComputedStyle(player).bottom);
-            let newBottom = currentBottom - playerVelocity * deltaTime * 60; // Normalize position update
+            let newBottom = currentBottom - playerVelocity;
 
             // Check ground collision with proper constants
             if (newBottom <= CONSTANTS.GROUND_HEIGHT) {
@@ -1604,7 +1586,7 @@
 
             // Rotate player during jump
             if (isJumping) {
-                rotation += 5 * deltaTime * 60; // Normalize rotation speed
+                rotation += 5;
                 player.style.transform = `rotate(${rotation}deg)`;
             } else {
                 rotation = 0;
@@ -1619,10 +1601,10 @@
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 const obstacle = obstacles[i];
                 let obstacleLeft = parseInt(obstacle.element.style.left);
-                obstacle.element.style.left = (obstacleLeft - adjustedSpeed) + 'px';
+                obstacle.element.style.left = (obstacleLeft - currentSpeed) + 'px';
 
                 // Remove off-screen obstacles to improve performance
-                if (obstacleLeft < -CONSTANTS.COLUMN_WIDTH) {
+                if (obstacleLeft < -50) {
                     obstacle.element.remove();
                     obstacles.splice(i, 1);
                     continue;
@@ -1681,28 +1663,12 @@
                     }
                 }
             }
-            
-            // Ensure all obstacles in the visible area are rendered
-            const visibleAreaStart = -CONSTANTS.COLUMN_WIDTH;
-            const visibleAreaEnd = gameContainer.offsetWidth + CONSTANTS.COLUMN_WIDTH;
-            const visibleObstacles = obstacles.filter(obs => {
-                const obsLeft = parseInt(obs.element.style.left);
-                return obsLeft >= visibleAreaStart && obsLeft <= visibleAreaEnd;
-            });
-            if (visibleObstacles.length === 0 && currentColumn < levelMatrix[0].length) {
-                // Force creation of a new column if no obstacles are visible
-                for (let row = 0; row < levelMatrix.length; row++) {
-                    createObstacleFromMatrix(levelMatrix[row][currentColumn], row);
-                }
-                currentColumn++;
-                updateProgress();
-            }
 
             // Update particle effects
             for (let i = particles.length - 1; i >= 0; i--) {
                 const particle = particles[i];
-                particle.vy += 0.5 * deltaTime * 60;  // Gravity effect on particles
-                particle.life -= 0.02 * deltaTime * 60;  // Particle fade out
+                particle.vy += 0.5;  // Gravity effect on particles
+                particle.life -= 0.02;  // Particle fade out
 
                 // Remove dead particles
                 if (particle.life <= 0) {
@@ -1715,8 +1681,8 @@
                 const currentLeft = parseFloat(particle.element.style.left);
                 const currentTop = parseFloat(particle.element.style.top);
 
-                particle.element.style.left = (currentLeft + particle.vx * deltaTime * 60) + 'px';
-                particle.element.style.top = (currentTop + particle.vy * deltaTime * 60) + 'px';
+                particle.element.style.left = (currentLeft + particle.vx) + 'px';
+                particle.element.style.top = (currentTop + particle.vy) + 'px';
                 particle.element.style.opacity = particle.life;
             }
 
@@ -1732,7 +1698,7 @@
             // Smooth camera movement
             const cameraDistance = targetCameraY - cameraOffsetY;
             if (Math.abs(cameraDistance) > CAMERA_FOLLOW_THRESHOLD) {
-                const cameraSpeed = Math.min(Math.abs(cameraDistance) * 0.1, MAX_CAMERA_SPEED) * deltaTime * 60;
+                const cameraSpeed = Math.min(Math.abs(cameraDistance) * 0.1, MAX_CAMERA_SPEED);
                 cameraOffsetY += Math.sign(cameraDistance) * cameraSpeed;
             }
 
