@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Read Test Level</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    pre { background: #f4f4f4; padding: 10px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <h1>Test Level Data</h1>
+  <button onclick="readTestLevel()">Load Test Level</button>
+  <div id="output"></div>
+
+  <script>
+    const DB_NAME = 'LevelEditorDB';
+    const DB_VERSION = 1;
+    const TEST_STORE = 'testLevel';
+
+    function readTestLevel() {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+      request.onerror = function(event) {
+        console.error("Database error:", event.target.error);
+        document.getElementById('output').textContent = "Failed to open database.";
+      };
+
+      request.onsuccess = function(event) {
+        const db = event.target.result;
+        const transaction = db.transaction([TEST_STORE], 'readonly');
+        const store = transaction.objectStore(TEST_STORE);
+
+        const getRequest = store.get('currentTest'); // Use fixed key from your example
+
+        getRequest.onsuccess = function(event) {
+          const data = event.target.result;
+          if (data) {
+            document.getElementById('output').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+          } else {
+            document.getElementById('output').textContent = "No test level found.";
+          }
+        };
+
+        getRequest.onerror = function(event) {
+          console.error("Read error:", event.target.error);
+          document.getElementById('output').textContent = "Error reading test level.";
+        };
+      };
+    }
+  </script>
+</body>
+</html>
