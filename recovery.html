@@ -2,7 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Read Test Level</title>
+  <title>Recover Levels</title>
+
+  <!-- Clarity -->
+  <script type="text/javascript">
+      (function(c,l,a,r,i,t,y){
+          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      })(window, document, "clarity", "script", "qmwn0cnmtk");
+  </script>
+  <!-- Umami -->
+  <script
+      defer
+      src="https://cloud.umami.is/script.js"
+      data-website-id="ad356c7d-9de3-43a1-9ff0-482f6971d30a"
+  ></script>
+
+  <!-- Sentry -->
+  <script
+    src="https://js.sentry-cdn.com/ccf96a7dc8282637bfdcc4a045c40997.min.js"
+    crossorigin="anonymous"
+  ></script>
+
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     pre { background: #f4f4f4; padding: 10px; border: 1px solid #ccc; }
@@ -31,7 +53,7 @@
         const transaction = db.transaction([TEST_STORE], 'readonly');
         const store = transaction.objectStore(TEST_STORE);
 
-        const getRequest = store.get('currentTest'); // Use fixed key from your example
+        const getRequest = store.get('currentTest');
 
         getRequest.onsuccess = function(event) {
           const data = event.target.result;
