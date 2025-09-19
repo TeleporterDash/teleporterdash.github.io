@@ -1105,12 +1105,12 @@
         const totalColumns = levelMatrix[0].length;
 
         // Global jump buffer for keyboard/mouse inputs
-        let jumpBufferTime = 200; // milliseconds
+        let jumpBufferTime = 0; // milliseconds
         
         let lastJumpPressTime = 0;
         
         // New variable for touch-specific sensitivity
-        let touchJumpDelay = 300; // milliseconds - adjust as needed
+        let touchJumpDelay = 300; // milliseconds
 
         // Progress update timing to optimize performance
         let lastProgressUpdate = 0;
