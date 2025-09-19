@@ -1085,9 +1085,9 @@
 
             // // Game state variables
         let isJumping = false;                      // Whether player is currently jumping
-        let gravity = 0.6;                          //! Rate at which player falls
-        let jumpForce = -15;                        //! Initial upward velocity when jumping
-        let playerVelocity = 0;                     // Current vertical velocity of player
+        let gravity = 900;                          //! Rate at which player falls (pixels/second²) - adjusted for deltaTime
+        let jumpForce = -450;                       //! Initial upward velocity when jumping (pixels/second) - adjusted for deltaTime
+        let playerVelocity = 0;                     // Current vertical velocity of player (pixels/second)
         let gameSpeed = 4;                          //! Base movement speed of the level
         let isGameOver = false;                     // Whether the game is in a "game over" state
         let rotation = 0;                           // Current rotation of the player sprite
@@ -1098,6 +1098,12 @@
         let doubleJumpAvailable = true;             // Whether double jump is available
         let particles = [];                         // Array of active particle effects
         let isOnPlatform = false;                   // Whether player is standing on a platform
+
+        // DeltaTime variables for frame-rate independence
+        let lastFrameTime = performance.now();      // Timestamp of the last frame
+        let deltaTime = 0;                          // Time elapsed since last frame (in seconds)
+        const TARGET_FPS = 60;                      // Target frame rate for physics calculations
+        const MAX_DELTA_TIME = 1 / 30;              // Cap deltaTime to prevent large jumps
 
         // Progress tracking variables
         const progressText = document.getElementById('progressText');
@@ -1256,12 +1262,12 @@
                 gameContainer.appendChild(particle);
 
                 const angle = (Math.random() * Math.PI * 2);
-                const speed = Math.random() * 5 + 2;
+                const speed = (Math.random() * 5 + 2) * 60; // Convert to pixels/second (multiply by 60 for 60 FPS equivalent)
 
                 particles.push({
                     element: particle,
                     vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed - 2,
+                    vy: Math.sin(angle) * speed - 120, // Convert initial upward velocity to pixels/second
                     life: 1
                 });
             }
@@ -1557,6 +1563,11 @@
          * Called every animation frame when game is running
          */
         function updateGame() {
+            // Calculate deltaTime for frame-rate independence
+            const currentFrameTime = performance.now();
+            deltaTime = Math.min((currentFrameTime - lastFrameTime) / 1000, MAX_DELTA_TIME);
+            lastFrameTime = currentFrameTime;
+
             // Don't update if game isn't in active state
             if (!isLevelStarted || isGameOver || isLevelComplete) {
                 return;
@@ -1570,9 +1581,10 @@
             // Update background color as part of the game loop
             updateBackgroundColor();
 
-            // Apply game speed to obstacle movement
-            const baseSpeed = 4;  // Default speed
+            // Apply game speed to obstacle movement (frame-rate independent)
+            const baseSpeed = 240;  // pixels per second (adjusted from 4 pixels per frame at 60 FPS)
             const currentSpeed = isPracticeMode ? (baseSpeed * (SettingsManager.current.gameSpeed / 4)) : baseSpeed;
+            const frameSpeed = currentSpeed * deltaTime; // Convert to pixels per frame
 
             // Create new obstacles when needed
             // Only creates obstacles when there's enough space from the last one
@@ -1588,10 +1600,10 @@
                 updateProgress();
             }
 
-            // Player physics calculations
-            playerVelocity += gravity;
+            // Player physics calculations (frame-rate independent)
+            playerVelocity += gravity * deltaTime; // Apply gravity based on time elapsed
             const currentBottom = parseInt(window.getComputedStyle(player).bottom);
-            let newBottom = currentBottom - playerVelocity;
+            let newBottom = currentBottom - (playerVelocity * deltaTime); // Move based on velocity and time
 
             // Check ground collision with proper constants
             if (newBottom <= CONSTANTS.GROUND_HEIGHT) {
@@ -1605,9 +1617,10 @@
             player.style.bottom = `${newBottom}px`;
             player.style.left = '100px'; // Keep player's horizontal position fixed
 
-            // Rotate player during jump
+            // Rotate player during jump (frame-rate independent)
+            const rotationSpeed = 300; // degrees per second
             if (isJumping) {
-                rotation += 5;
+                rotation += rotationSpeed * deltaTime;
                 player.style.transform = `rotate(${rotation}deg)`;
             } else {
                 rotation = 0;
@@ -1622,7 +1635,7 @@
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 const obstacle = obstacles[i];
                 let obstacleLeft = parseInt(obstacle.element.style.left);
-                obstacle.element.style.left = (obstacleLeft - currentSpeed) + 'px';
+                obstacle.element.style.left = (obstacleLeft - frameSpeed) + 'px'; // Use frame-rate independent speed
 
                 // Remove off-screen obstacles to improve performance
                 if (obstacleLeft < -50) {
@@ -1685,11 +1698,11 @@
                 }
             }
 
-            // Update particle effects
+            // Update particle effects (frame-rate independent)
             for (let i = particles.length - 1; i >= 0; i--) {
                 const particle = particles[i];
-                particle.vy += 0.5;  // Gravity effect on particles
-                particle.life -= 0.02;  // Particle fade out
+                particle.vy += 300 * deltaTime;  // Gravity effect on particles (pixels/second²)
+                particle.life -= 1.2 * deltaTime;  // Particle fade out (per second)
 
                 // Remove dead particles
                 if (particle.life <= 0) {
@@ -1702,8 +1715,8 @@
                 const currentLeft = parseFloat(particle.element.style.left);
                 const currentTop = parseFloat(particle.element.style.top);
 
-                particle.element.style.left = (currentLeft + particle.vx) + 'px';
-                particle.element.style.top = (currentTop + particle.vy) + 'px';
+                particle.element.style.left = (currentLeft + particle.vx * deltaTime) + 'px';
+                particle.element.style.top = (currentTop + particle.vy * deltaTime) + 'px';
                 particle.element.style.opacity = particle.life;
             }
 
@@ -1712,14 +1725,15 @@
                 requestAnimationFrame(updateGame);
             }
 
-            // Update camera position to follow player
+            // Update camera position to follow player (frame-rate independent)
             const containerHeight = gameContainer.offsetHeight;
             const targetCameraY = Math.max(0, newBottom - containerHeight / 2);
 
             // Smooth camera movement
             const cameraDistance = targetCameraY - cameraOffsetY;
             if (Math.abs(cameraDistance) > CAMERA_FOLLOW_THRESHOLD) {
-                const cameraSpeed = Math.min(Math.abs(cameraDistance) * 0.1, MAX_CAMERA_SPEED);
+                const baseCameraSpeed = Math.min(Math.abs(cameraDistance) * 6, MAX_CAMERA_SPEED * 60); // Convert to pixels/second
+                const cameraSpeed = baseCameraSpeed * deltaTime; // Apply deltaTime
                 cameraOffsetY += Math.sign(cameraDistance) * cameraSpeed;
             }
 
